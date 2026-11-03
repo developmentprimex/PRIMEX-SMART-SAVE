@@ -12,6 +12,7 @@ public sealed class AppOptions
     public LoggingOptions Logging { get; set; } = new();
     public string UiLanguage { get; set; } = "en";
     public bool StartWithWindows { get; set; } = true;
+    public bool GuidanceSetupCompleted { get; set; }
     public IReadOnlyList<string> Validate()
     {
         List<string> errors = [];

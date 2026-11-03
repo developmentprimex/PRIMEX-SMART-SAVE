@@ -6,6 +6,7 @@
       <TextBlock Text="Download or save a document into a selected folder. Once the file is ready, Smart Save asks whether to move it to the company server or keep it there." TextWrapping="Wrap" Margin="0,12"/>
       <TextBlock Text="Works with completed files from Teams, browsers, Excel, PDF apps and other applications that save into these folders. Open or locked files wait until the application releases them. This is a prompt after saving." TextWrapping="Wrap" Foreground="#617586" Margin="0,0,0,14"/>
       <CheckBox x:Name="EnableBox" Content="_Enable automatic guidance on this PC (pilot)" IsChecked="{Binding Enabled}" FontWeight="SemiBold" Margin="0,6,0,12"/>
+      <CheckBox Content="Start automatically when I sign in to Windows (installed version)" IsChecked="{Binding StartWithWindows}" Margin="0,0,0,12"/>
       <Border Style="{StaticResource Card}"><StackPanel>
         <TextBlock Text="Watch these local folders" FontWeight="SemiBold"/>
         <ItemsControl ItemsSource="{Binding Folders}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel Margin="0,10,0,0"><CheckBox Content="{Binding Label}" IsChecked="{Binding Selected}"/><TextBlock Text="{Binding Path}" Foreground="#617586" TextWrapping="Wrap" Margin="22,3,0,0"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>

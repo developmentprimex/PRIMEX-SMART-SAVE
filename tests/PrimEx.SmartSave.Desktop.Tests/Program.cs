@@ -73,9 +73,16 @@ internal static class Program
                 var timeout = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) }; timeout.Tick += (_, _) => wizard.Close(); timeout.Start();
                 try { Assert(wizard.ShowDialog() == true && applied); } finally { timeout.Stop(); wizard.Close(); }
                 var saved = AppOptions.Load(settings);
-                Assert(saved.Monitoring.Enabled && saved.Monitoring.IncludeSubdirectories && saved.Monitoring.Folders.Single() == root);
+                Assert(saved.Monitoring.Enabled && saved.Monitoring.IncludeSubdirectories && saved.Monitoring.Folders.Single() == root && saved.GuidanceSetupCompleted);
                 Assert(saved.Browser.Enabled && saved.Browser.AllowedExtensionIds.SequenceEqual(options.Browser.AllowedExtensionIds));
                 Assert(!options.Monitoring.Enabled); // Cancel/opening setup never mutates the live configuration.
+                await Task.CompletedTask;
+            });
+            await Test("Staff setup persists startup opt-out without losing monitoring", async () => {
+                var model = new AutomaticGuidanceViewModel(options, []) { StartWithWindows = false };
+                var updated = model.CreateOptions();
+                Assert(!updated.StartWithWindows && updated.GuidanceSetupCompleted && !updated.Monitoring.Enabled);
+                Assert(options.StartWithWindows && !options.GuidanceSetupCompleted);
                 await Task.CompletedTask;
             });
             await Test("Automatic setup requires selected folders when enabled", async () => {

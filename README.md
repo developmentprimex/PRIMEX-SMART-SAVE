@@ -6,8 +6,15 @@ There is no global Save interceptor and no cloud service or database.
 
 **Status:** core, desktop agent, native messaging, explicit browser-link downloads,
 and opt-in post-save monitoring are implemented. Office save interception is
-not implemented or certified. The MSI source is prepared but unbuilt. This
+not implemented or certified. A self-contained Windows x64 staff MSI is built;
+full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
+
+For staff PCs, use `artifacts/staff-installer/PrimEx.SmartSave-0.2.0-win-x64.msi`
+and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
+.NET, creates shortcuts and registers launch at sign-in. The installed build
+opens configuration on first use, with monitoring disabled until explicitly
+enabled. See [deployment details and validation limits](installer/README.md).
 
 ## Build and run
 

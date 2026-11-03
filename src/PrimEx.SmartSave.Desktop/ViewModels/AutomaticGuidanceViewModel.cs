@@ -17,10 +17,11 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
 {
     private readonly AppOptions original;
     private string roots, extensions, error = "";
-    private bool enabled, includeSubdirectories;
+    private bool enabled, includeSubdirectories, startWithWindows;
     public ObservableCollection<WatchedFolder> Folders { get; } = [];
     public bool Enabled { get => enabled; set => Set(ref enabled, value); }
     public bool IncludeSubdirectories { get => includeSubdirectories; set => Set(ref includeSubdirectories, value); }
+    public bool StartWithWindows { get => startWithWindows; set => Set(ref startWithWindows, value); }
     public string ApprovedRoots { get => roots; set => Set(ref roots, value); }
     public string Extensions { get => extensions; set => Set(ref extensions, value); }
     public string Error { get => error; set => Set(ref error, value); }
@@ -29,6 +30,7 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         original = options;
         enabled = options.Monitoring.Enabled;
         includeSubdirectories = options.Monitoring.IncludeSubdirectories;
+        startWithWindows = options.StartWithWindows;
         roots = string.Join(Environment.NewLine, options.CompanyServer.ApprovedRoots);
         extensions = string.Join(", ", options.Monitoring.Extensions);
         foreach (var folder in suggestions)
@@ -48,6 +50,8 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         var result = JsonSerializer.Deserialize<AppOptions>(JsonSerializer.Serialize(original))!;
         result.CompanyServer.ApprovedRoots = ApprovedRoots.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         result.Monitoring.Enabled = Enabled;
+        result.StartWithWindows = StartWithWindows;
+        result.GuidanceSetupCompleted = true;
         result.Monitoring.IncludeSubdirectories = IncludeSubdirectories;
         result.Monitoring.Folders = Folders.Where(x => x.Selected).Select(x => x.Path).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         result.Monitoring.Extensions = Extensions.Split([',', ';', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).Distinct().ToArray();

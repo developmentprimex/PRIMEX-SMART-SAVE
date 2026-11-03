@@ -12,11 +12,16 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
 | Core/filesystem/security/configuration/monitoring executable harness | 56 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 21 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 22 passed, zero failed |
 | Node browser policy and MV3 worker tests | 8 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
+| Self-contained staff MSI 0.2.0, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
+| Extracted self-contained staff app runtime/sign-in/first-run checks | 5 passed, zero failed |
+| Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
+| Actual MSI install/upgrade/uninstall and real sign-in | Not executed; requires Windows pilot/VM |
 | WPF dialog rendered to PNG and visually inspected | Pass; buttons pinned, both choices available |
 | Agent starts and writes startup event | Pass |
 | Windows UI automation smoke | Main window and native file picker observed; full input workflow interrupted by minimized-window/user-input state |
@@ -69,7 +74,7 @@ Tests cover real modal setup Apply, configuration preservation and concurrent-ed
 rejection, Windows known-folder lookup, scope boundaries, partial-download
 exclusion and a real watcher detecting a browser-style completion rename. Rendered
 `artifacts/verification/automatic-guidance.png` was visually inspected. The total
-automated count is now 85. An additional test launches the actual desktop agent
+automated count is now 101. An additional test launches the actual desktop agent
 with isolated opt-in monitoring and confirms that synthetic PDF/Word saves and
 a completed Excel-style download automatically enter its durable queue without
 clicking Move a file. Partial downloads are excluded and every source remains
@@ -97,6 +102,27 @@ folder selection step. It now offers Cancel and Move here, with the keep option
 only in the first post-save prompt. Error messages use the same cancellation
 wording. Existing modal regression checks verify the Cancel label and that
 cancelling does not move the source.
+
+Staff deployment follow-up (0.2.0): built the per-user staff MSI using WiX 6.0.2
+downloaded into workspace-local build tools. The package includes .NET 10.0.8
+and creates current-user Desktop/Start-menu shortcuts and an HKCU sign-in Run
+entry. Browser/native messaging is optional, and is absent from the default staff
+MSI. All 479 embedded files were extracted using WiX decompile and SHA-256 checked
+against the published payload. The self-contained runtime suite ran against that
+extracted image with an invalid global DOTNET_ROOT, confirming first-run setup,
+later background sign-in, startup opt-out and manual opening. Setup remains
+opt-in; the new setup-completed flag and startup preference are persisted.
+
+MSI: `artifacts/staff-installer/PrimEx.SmartSave-0.2.0-win-x64.msi` (58,167,848 bytes).
+SHA-256: `3a06950a1ca33212a4f97a7c40e21877c027bd0921be79002b35dddfb0dc960e`.
+Authenticode status: NotSigned. No enterprise certificate was provided. Windows
+Installer service access failed during ICE validation in the restricted account;
+this is an environment failure, not a successful validation. Actual MSI install,
+repair, upgrade, uninstall and Windows sign-out/sign-in acceptance must be tested
+in a disposable ordinary Windows account/VM. No staff PC or system policy was
+modified. The app starts at sign-in but has no crash watchdog. Close/Exit behavior
+remains under the signed-in user's control. See installer/README.md and the
+Albanian staff guide for installation and pilot instructions.
 
 NuGet network access is blocked. For this run the two existing Microsoft DI 8.0.0
 packages were copied from the user's existing package cache into an isolated

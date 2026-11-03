@@ -73,6 +73,11 @@ public partial class App : Application
             }
             StartMonitoring();
             if (!e.Args.Contains("--background")) MainWindow.Show();
+            if (File.Exists(Path.Combine(AppContext.BaseDirectory, "installed.mode")) && !options.GuidanceSetupCompleted)
+            {
+                services.GetRequiredService<IEventLog>().Write("FirstRunSetupRequested");
+                _ = Dispatcher.BeginInvoke(async () => await OpenAutomaticGuidanceAsync());
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or System.Text.Json.JsonException)
         {
@@ -90,7 +95,7 @@ public partial class App : Application
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Automatic guidance…", null, async (_, _) => await OpenAutomaticGuidanceAsync());
         menu.Items.Add("View Pending Operations", null, (_, _) => ShowMain());
-        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.1.0\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
+        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.0\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
         menu.Items.Add("Exit", null, (_, _) => {
             var queue = services!.GetRequiredService<QueueViewModel>();
             if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before exiting."; ShowMain(); return; }
@@ -146,6 +151,8 @@ public partial class App : Application
                 options.CompanyServer.ApprovedRoots = updated.CompanyServer.ApprovedRoots;
                 options.CompanyServer.DiscoverMappedDrives = updated.CompanyServer.DiscoverMappedDrives;
                 options.Monitoring = updated.Monitoring;
+                options.StartWithWindows = updated.StartWithWindows;
+                options.GuidanceSetupCompleted = updated.GuidanceSetupCompleted;
                 StartMonitoring();
                 services!.GetRequiredService<IEventLog>().Write(updated.Monitoring.Enabled ? "AutomaticGuidanceEnabled" : "AutomaticGuidanceDisabled");
                 queue.Status = updated.Monitoring.Enabled ? "Automatic guidance is active. Download or save a new document into a selected folder to test it." : "Automatic guidance is disabled. Your files remain where they are.";

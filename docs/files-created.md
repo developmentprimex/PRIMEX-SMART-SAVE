@@ -24,9 +24,13 @@ These files were created in this initially empty repository across implementatio
 - `extensions/chrome-edge/popup.js`
 - `global.json`
 - `installer/Build.ps1`
+- `installer/build_staff.py`
+- `installer/DeploymentNotice.rtf`
+- `installer/generate_payload.py`
 - `installer/PrimEx.SmartSave.wxs`
 - `installer/README.md`
 - `installer/Register-NativeHost.ps1`
+- `installer/STAFF-INSTALL-SQ.md`
 - `NuGet.Config`
 - `PrimEx.SmartSave.sln`
 - `README.md`
@@ -86,6 +90,8 @@ These files were created in this initially empty repository across implementatio
 - `src/PrimEx.SmartSave.Office/PrimEx.SmartSave.Office.csproj`
 - `tests/browser/policy.test.mjs`
 - `tests/browser/worker.test.mjs`
+- `tests/installer/test_staff_package.py`
+- `tests/installer/test_staff_runtime.py`
 - `tests/PrimEx.SmartSave.Desktop.Tests/PrimEx.SmartSave.Desktop.Tests.csproj`
 - `tests/PrimEx.SmartSave.Desktop.Tests/Program.cs`
 - `tests/PrimEx.SmartSave.Tests/PrimEx.SmartSave.Tests.csproj`

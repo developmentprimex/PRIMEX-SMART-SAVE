@@ -1,37 +1,65 @@
-# Deployment preparation (not installation certification)
+# Staff MSI 0.2.0 — per-user pilot
 
-MSI source targets WiX 6 and a per-user Windows Installer package. WiX is not
-available in this development sandbox, so the MSI has not been compiled or
-installed. Treat packaging as a release gate. Do not deploy this candidate widely.
+The self-contained Windows x64 MSI is now built at
+`artifacts/staff-installer/PrimEx.SmartSave-0.2.0-win-x64.msi`.
+It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
+Default packaging does not include native messaging or require extension IDs;
+ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+The MSI installs for the signed-in user under
+`%LOCALAPPDATA%\PrimEx\SmartSaveApp\Desktop`, creates Desktop and Start-menu
+shortcuts, registers HKCU Run with `--startup --background`, and appears in
+Windows Installed Apps. Open the desktop shortcut after installation to configure
+folders. First startup of the installed build opens Automatic guidance until
+setup is applied once. Existing settings and queued operations are retained.
+
+The checkbox **Start automatically when I sign in to Windows** controls the
+persisted `StartWithWindows` setting. Unticking it makes startup invocations exit;
+manual opening still works. Closing the main window hides to tray. Tray Exit stops
+the agent until opened again or the next enabled sign-in. It is a user-session
+agent, not a Windows service, and has no crash watchdog or forced restart after
+an explicit Exit. Folder monitoring stays off until the user applies setup.
+
+Build, table checks, self-contained runtime/first-run checks, and extraction/hash
+verification are documented in docs/validation.md. The restricted development
+account cannot access the Windows Installer service: full ICE validation and
+install/upgrade/uninstall/sign-in testing need an ordinary Windows pilot/VM.
+The MSI is unsigned; enterprise certificate signing and pilot acceptance remain
+required before a broad rollout. No staff PCs were installed remotely.
 
 Windows execution policy on the development PC blocks unsigned `.ps1` files.
 Scripts were syntax-checked but not executed to change registration. Sign these
 scripts with an approved enterprise certificate or run them through the authorized
 deployment system. No execution policy was changed or bypassed during development.
 
-On a network-enabled Windows build machine, use .NET SDK 10.0.300+ and WiX 6.
-Obtain stable approved Chrome/Edge extension IDs from the approved store or your
-managed developer package. Do not use placeholder IDs for deployment.
+On a Windows build machine, use .NET SDK 10.0.300+, Python 3.11+, WiX 6.0.2 and
+the matching WixToolset.UI.wixext extension. Keep build tools outside the installed
+payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
-.\installer\Build.ps1 -ChromeExtensionId <32-letter-id> -EdgeExtensionId <32-letter-id>
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer
 ```
 
-The default publishes self-contained executables and includes the .NET runtime.
-`-FrameworkDependent` instead requires the matching architecture .NET 10 Windows
-Desktop Runtime to be installed as an Intune dependency before the MSI. `-SkipMsi`
-prepares payloads only. Use a clean payload directory for repeatable releases;
-the script refuses to recursively replace an existing payload.
+`--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
+from a reviewed local NuGet feed; online audit must be completed separately.
+`--runtime-version` pins the bundled runtime (default 10.0.8); update it for
+servicing and rebuild the MSI. `--version` sets the three-part product version.
+The builder refuses to overwrite an existing output directory. Component IDs and
+GUIDs are stable for each relative payload path, and every component has an HKCU
+registry key path suitable for a per-user installation. Developer state/PDBs are
+rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
+
+To additionally include/register the native host, pass `--extension-id <actual-id>`
+once per approved Chrome/Edge extension ID. This does not install the extension
+or enable browser config. No fake extension IDs are placed into the default MSI.
 
 Review dependency advisories, update package locks and SDK servicing versions on
 the build machine, run all verification, sign EXEs and MSI with your enterprise
 certificate, then install in a disposable VM. Retain the UpgradeCode, increment
 Version for upgrades, and test upgrade/downgrade/uninstall with an active queue.
 
-The MSI installs in `%LOCALAPPDATA%\PrimEx\SmartSaveApp`, registers Native Messaging
-in HKCU for Chrome and Edge, adds a Start-menu shortcut, and uses HKCU Run to
-start the agent with `--startup --background`. Runtime `StartWithWindows=false`
-causes startup invocations to exit. Normal user saves need no elevation.
+Normal user saves need no elevation. Do not run the per-user MSI as a different
+administrator account or SYSTEM; install in the employee's interactive user context.
 
 Configuration/journals/logs live separately in `%LOCALAPPDATA%\PrimEx\SmartSave`.
 Uninstall intentionally retains these and all staging documents. Review staging
@@ -51,6 +79,14 @@ the entire company until the pilot is approved. GPO: user-assigned MSI deploymen
 or approved user-logon deployment can install the same package. IT must manage
 any browser ExtensionInstallForcelist policy through its normal approval process;
 none of these scripts modify it.
+
+Pilot checklist: close all old portable instances from the tray; install as the
+employee; open the shortcut; enable the intended folders/company roots; test a
+disposable download; sign out and back in; confirm the tray icon and post-save
+prompt; test startup opt-out and manual open; test upgrade with retained state;
+uninstall and confirm startup/shortcuts are removed while state and user files
+remain. Do not force-stop an agent during a transfer. The MSI does not contain
+any actual company address or copied employee configuration.
 
 References: [Windows Run keys](https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys),
 [Intune Win32 deployment](https://learn.microsoft.com/en-us/mem/intune/apps/apps-win32-add),
