@@ -11,15 +11,15 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 | Check | Result |
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
-| Core/filesystem/security/configuration/monitoring executable harness | 56 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 22 passed, zero failed |
+| Core/filesystem/security/configuration/monitoring executable harness | 61 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 23 passed, zero failed |
 | Node browser policy and MV3 worker tests | 8 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.0, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.1, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
-| Extracted self-contained staff app runtime/sign-in/first-run checks | 5 passed, zero failed |
+| Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
 | Actual MSI install/upgrade/uninstall and real sign-in | Not executed; requires Windows pilot/VM |
 | WPF dialog rendered to PNG and visually inspected | Pass; buttons pinned, both choices available |
@@ -74,7 +74,7 @@ Tests cover real modal setup Apply, configuration preservation and concurrent-ed
 rejection, Windows known-folder lookup, scope boundaries, partial-download
 exclusion and a real watcher detecting a browser-style completion rename. Rendered
 `artifacts/verification/automatic-guidance.png` was visually inspected. The total
-automated count is now 101. An additional test launches the actual desktop agent
+automated count is now 108. An additional test launches the actual desktop agent
 with isolated opt-in monitoring and confirms that synthetic PDF/Word saves and
 a completed Excel-style download automatically enter its durable queue without
 clicking Move a file. Partial downloads are excluded and every source remains
@@ -123,6 +123,33 @@ in a disposable ordinary Windows account/VM. No staff PC or system policy was
 modified. The app starts at sign-in but has no crash watchdog. Close/Exit behavior
 remains under the signed-in user's control. See installer/README.md and the
 Albanian staff guide for installation and pilot instructions.
+
+All-file-types follow-up (0.2.1): the default extension setting is now `["*"]`,
+with an All completed file types checkbox. PNG/JPG images, unfamiliar extensions
+and extensionless files are covered in the explicitly selected local folders.
+Partial downloads, temporary/lock files, caches/build subfolders and recovery
+backups are still excluded. Cache matching is scoped to the selected root rather
+than all of its ancestors, so legitimate redirected folders under AppData are
+not accidentally discarded. Existing reparse/system/hidden checks remain.
+
+The exact two previously shipped default lists upgrade to all-types in memory;
+custom lists are preserved. No configuration file is rewritten at startup, and
+monitoring/folder/server/startup settings do not change. Tests cover legacy-default
+loading, byte-for-byte configuration retention, custom restrictions, images and
+unknown types, cache/partial exclusion and actual desktop PNG queuing. The staff
+runtime suite additionally launches the self-contained app with an old default
+configuration and confirms PNG/JPG downloads queue automatically, while the
+partial file is untouched and settings stay byte-for-byte unchanged. No staff
+PC has been upgraded remotely. Install 0.2.1 as the same user after exiting 0.2.0;
+normal install/upgrade/uninstall and real sign-in still need pilot acceptance.
+
+0.2.1 MSI: `artifacts/staff-installer-0.2.1/PrimEx.SmartSave-0.2.1-win-x64.msi`
+(58,171,944 bytes), SHA-256
+`118740ea908dd5eb238ab81ed8c0236ea6fb1df2592bc3149d3d5e323e19df79`.
+All 479 files were extracted and verified against the release payload. The
+six-test runtime suite passed on the reconstructed extracted MSI image. The
+package remains unsigned and retains the previous Windows Installer service
+validation limitations.
 
 NuGet network access is blocked. For this run the two existing Microsoft DI 8.0.0
 packages were copied from the user's existing package cache into an isolated

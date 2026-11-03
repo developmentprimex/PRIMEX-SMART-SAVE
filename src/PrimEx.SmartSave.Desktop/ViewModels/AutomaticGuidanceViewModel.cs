@@ -17,11 +17,13 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
 {
     private readonly AppOptions original;
     private string roots, extensions, error = "";
-    private bool enabled, includeSubdirectories, startWithWindows;
+    private bool enabled, includeSubdirectories, startWithWindows, allFileTypes;
     public ObservableCollection<WatchedFolder> Folders { get; } = [];
     public bool Enabled { get => enabled; set => Set(ref enabled, value); }
     public bool IncludeSubdirectories { get => includeSubdirectories; set => Set(ref includeSubdirectories, value); }
     public bool StartWithWindows { get => startWithWindows; set => Set(ref startWithWindows, value); }
+    public bool AllFileTypes { get => allFileTypes; set { Set(ref allFileTypes, value); Changed(nameof(CustomFileTypesEnabled)); } }
+    public bool CustomFileTypesEnabled => !AllFileTypes;
     public string ApprovedRoots { get => roots; set => Set(ref roots, value); }
     public string Extensions { get => extensions; set => Set(ref extensions, value); }
     public string Error { get => error; set => Set(ref error, value); }
@@ -32,7 +34,8 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         includeSubdirectories = options.Monitoring.IncludeSubdirectories;
         startWithWindows = options.StartWithWindows;
         roots = string.Join(Environment.NewLine, options.CompanyServer.ApprovedRoots);
-        extensions = string.Join(", ", options.Monitoring.Extensions);
+        allFileTypes = MonitoringFileTypes.IncludesAll(options.Monitoring.Extensions);
+        extensions = allFileTypes ? ".pdf, .docx, .xlsx, .png, .jpg, .jpeg, .zip" : string.Join(", ", options.Monitoring.Extensions);
         foreach (var folder in suggestions)
             Folders.Add(new(folder.Label, folder.Path, options.Monitoring.Folders.Contains(folder.Path, StringComparer.OrdinalIgnoreCase)));
         foreach (var path in options.Monitoring.Folders)
@@ -54,9 +57,9 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         result.GuidanceSetupCompleted = true;
         result.Monitoring.IncludeSubdirectories = IncludeSubdirectories;
         result.Monitoring.Folders = Folders.Where(x => x.Selected).Select(x => x.Path).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        result.Monitoring.Extensions = Extensions.Split([',', ';', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).Distinct().ToArray();
-        if (result.Monitoring.Extensions.Length == 0 || result.Monitoring.Extensions.Any(x => !System.Text.RegularExpressions.Regex.IsMatch(x, @"^\.[a-z0-9]{1,12}$")))
-            throw new InvalidDataException("Enter file types such as .pdf, .xlsx, .docx, .zip.");
+        result.Monitoring.Extensions = AllFileTypes ? ["*"] : Extensions.Split([',', ';', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).Distinct().ToArray();
+        if (!MonitoringFileTypes.IsValid(result.Monitoring.Extensions))
+            throw new InvalidDataException("Select All completed file types, or enter file types such as .pdf, .xlsx, .png, .zip.");
         var errors = result.Validate(); if (errors.Count > 0) throw new InvalidDataException(string.Join(Environment.NewLine, errors));
         if (Enabled)
             foreach (var folder in result.Monitoring.Folders)

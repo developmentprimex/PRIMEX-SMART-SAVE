@@ -58,6 +58,7 @@ class StaffRuntimeTests(unittest.TestCase):
                 self.assertFalse(options["Monitoring"]["Enabled"])
                 self.assertEqual([], options["CompanyServer"]["ApprovedRoots"])
                 self.assertFalse(options.get("GuidanceSetupCompleted", False))
+                self.assertEqual(["*"], options["Monitoring"]["Extensions"])
                 self.assertEqual([], list((data / "operations").glob("*.json")))
             finally:
                 self.stop(process)
@@ -93,6 +94,37 @@ class StaffRuntimeTests(unittest.TestCase):
             process = self.launch(data)
             try:
                 self.wait_for_event(process, data, "ApplicationStarted")
+            finally:
+                self.stop(process)
+
+    def test_previous_default_config_automatically_detects_new_images(self):
+        with tempfile.TemporaryDirectory(prefix="PrimEx-Staff-FileTypes-") as temporary:
+            data = Path(temporary)
+            watched = data / "downloads"
+            watched.mkdir()
+            self.write_settings(data)
+            settings = data / "appsettings.json"
+            options = json.loads(settings.read_text())
+            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], QuietSeconds=1, Extensions=[".pdf", ".docx", ".xlsx", ".pptx", ".doc", ".xls", ".zip"])
+            original = json.dumps(options)
+            settings.write_text(original)
+            process = self.launch(data, "--startup")
+            try:
+                self.wait_for_event(process, data, "MonitoringStarted")
+                (watched / "image.png.crdownload").write_bytes(b"unfinished")
+                (watched / "image.png").write_bytes(b"synthetic completed image")
+                (watched / "image.JPG").write_bytes(b"synthetic completed image")
+                journal = data / "operations"
+                for _ in range(100):
+                    self.assertIsNone(process.poll())
+                    if len(list(journal.glob("*.json"))) == 2:
+                        break
+                    time.sleep(0.1)
+                requests = [json.loads(path.read_text()) for path in journal.glob("*.json")]
+                self.assertEqual({"image.png", "image.JPG"}, {item["Request"]["DisplayName"] for item in requests})
+                self.assertTrue(all(item["State"] == 0 for item in requests))
+                self.assertEqual(original, settings.read_text())
+                self.assertTrue((watched / "image.png.crdownload").exists())
             finally:
                 self.stop(process)
 

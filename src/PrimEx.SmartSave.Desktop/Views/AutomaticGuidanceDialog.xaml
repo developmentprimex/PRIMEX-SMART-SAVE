@@ -17,7 +17,9 @@
       <TextBox x:Name="RootsBox" Text="{Binding ApprovedRoots, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="70" MaxHeight="130" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Company server roots"/>
       <Button Content="Browse company _root…" Click="BrowseRoot" HorizontalAlignment="Left"/>
       <TextBlock Text="Choose your authorized company folder, or leave roots empty to test Keep Current Location. Save Outside Server remains available. Existing files are not scanned or moved automatically." Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
-      <Label Content="Document file types" Target="{Binding ElementName=TypesBox}"/><TextBox x:Name="TypesBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Document file types"/>
+      <CheckBox Content="All completed file types (recommended, including images)" IsChecked="{Binding AllFileTypes}" Margin="0,12,0,4" FontWeight="SemiBold"/>
+      <TextBlock Text="Includes PDFs, Office documents, PNG/JPG images, archives and other completed files in the selected folders. Temporary files, incomplete downloads and cache folders remain excluded." Foreground="#617586" TextWrapping="Wrap" Margin="0,4,0,8"/>
+      <Label Content="Specific file types (only when All completed file types is unchecked)" Target="{Binding ElementName=TypesBox}"/><TextBox x:Name="TypesBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CustomFileTypesEnabled}" AutomationProperties.Name="Specific file types"/>
       <TextBlock Text="Only the selected folders are watched while the agent runs. Temporary files and application caches are excluded. No browser extension is required for this folder-based mode. Background document changes can also be detected; repeat prompts are limited." FontSize="12" Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
     </StackPanel></ScrollViewer>
   </DockPanel>

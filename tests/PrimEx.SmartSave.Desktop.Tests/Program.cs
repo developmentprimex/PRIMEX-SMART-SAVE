@@ -85,6 +85,16 @@ internal static class Program
                 Assert(options.StartWithWindows && !options.GuidanceSetupCompleted);
                 await Task.CompletedTask;
             });
+            await Test("Setup defaults to all file types and supports an explicit custom filter", async () => {
+                var model = new AutomaticGuidanceViewModel(options, []);
+                Assert(model.AllFileTypes && !model.CustomFileTypesEnabled);
+                Assert(model.CreateOptions().Monitoring.Extensions.SequenceEqual(new[] { "*" }));
+                model.AllFileTypes = false; model.Extensions = ".pdf, .png, .JPG";
+                Assert(model.CustomFileTypesEnabled && model.CreateOptions().Monitoring.Extensions.SequenceEqual(new[] { ".pdf", ".png", ".jpg" }));
+                model.AllFileTypes = true;
+                Assert(model.CreateOptions().Monitoring.Extensions.Single() == "*");
+                await Task.CompletedTask;
+            });
             await Test("Automatic setup requires selected folders when enabled", async () => {
                 var model = new AutomaticGuidanceViewModel(options, [new("Downloads", root)]) { Enabled = true };
                 bool rejected = false; try { model.CreateOptions(); } catch (InvalidDataException) { rejected = true; }
@@ -130,11 +140,11 @@ internal static class Program
                     string partial = Path.Combine(nested, "download.xlsx.crdownload"), final = Path.Combine(nested, "download.xlsx");
                     File.WriteAllText(partial, "synthetic download completion test"); await Task.Delay(1400);
                     Assert(Directory.GetFiles(journal, "*.json").Length == 0);
-                    File.Move(partial, final); File.WriteAllText(Path.Combine(watched, "document.pdf"), "synthetic PDF event"); File.WriteAllText(Path.Combine(watched, "document.docx"), "synthetic Word event");
-                    for (int i = 0; i < 100 && Directory.GetFiles(journal, "*.json").Length < 3; i++) { Assert(!process.HasExited); await Task.Delay(100); }
+                    File.Move(partial, final); File.WriteAllText(Path.Combine(watched, "document.pdf"), "synthetic PDF event"); File.WriteAllText(Path.Combine(watched, "document.docx"), "synthetic Word event"); File.WriteAllText(Path.Combine(watched, "image.png"), "synthetic image download");
+                    for (int i = 0; i < 100 && Directory.GetFiles(journal, "*.json").Length < 4; i++) { Assert(!process.HasExited); await Task.Delay(100); }
                     var requests = Directory.GetFiles(journal, "*.json").Select(path => JsonSerializer.Deserialize<PendingOperation>(File.ReadAllText(path))!).ToArray();
-                    Assert(requests.Length == 3 && requests.All(x => x.Request.Integration == "Monitoring" && x.State == OperationState.Pending && File.Exists(x.Request.SourcePath)));
-                    Assert(requests.Select(x => x.Request.DisplayName).Order().SequenceEqual(new[] { "document.docx", "document.pdf", "download.xlsx" }));
+                    Assert(requests.Length == 4 && requests.All(x => x.Request.Integration == "Monitoring" && x.State == OperationState.Pending && File.Exists(x.Request.SourcePath)));
+                    Assert(requests.Select(x => x.Request.DisplayName).Order().SequenceEqual(new[] { "document.docx", "document.pdf", "download.xlsx", "image.png" }));
                 }
                 finally { if (!process.HasExited) process.Kill(); await process.WaitForExitAsync(); }
             });

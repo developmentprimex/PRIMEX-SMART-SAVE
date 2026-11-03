@@ -21,6 +21,7 @@ public sealed class AppOptions
         if (CompanyServer.ApprovedRoots == null || Browser.AllowedExtensionIds == null || Browser.DownloadsFolder == null || Monitoring.Folders == null || Monitoring.Extensions == null || CompanyServer.ApprovedRoots.Any(x => x == null) || Browser.AllowedExtensionIds.Any(x => x == null) || Monitoring.Folders.Any(x => x == null) || Monitoring.Extensions.Any(x => x == null))
             return ["Configuration collections and folder values cannot be null."];
         if (Monitoring.QuietSeconds is < 1 or > 60) errors.Add("Monitoring.QuietSeconds must be between 1 and 60.");
+        if (!Services.MonitoringFileTypes.IsValid(Monitoring.Extensions)) errors.Add("Monitoring.Extensions must be [\"*\"] for all file types, or a list such as [\".pdf\", \".png\"].");
         if (!SmartSave.AllowOutsideServer) errors.Add("Outside-server saving must remain available in this edition.");
         if (CompanyServer.PreferredDestination != "CompanyServer") errors.Add("PreferredDestination must be CompanyServer.");
         if (UiLanguage != "en") errors.Add("Only the en UI language is currently implemented.");
@@ -39,6 +40,10 @@ public sealed class AppOptions
     public static AppOptions Load(string path)
     {
         var options = JsonSerializer.Deserialize<AppOptions>(File.ReadAllText(path), new JsonSerializerOptions { PropertyNameCaseInsensitive = true, UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow }) ?? throw new InvalidDataException("Empty configuration.");
+        // Upgrade only the two exact default lists shipped previously. Custom filters,
+        // selected folders, server roots and enablement are preserved. No file is rewritten.
+        if (options.Monitoring?.Extensions is { } extensions && Services.MonitoringFileTypes.IsLegacyDefault(extensions))
+            options.Monitoring.Extensions = ["*"];
         var errors = options.Validate();
         if (errors.Count > 0) throw new InvalidDataException(string.Join(Environment.NewLine, errors));
         return options;
@@ -70,7 +75,7 @@ public sealed class MonitoringOptions
     public bool Enabled { get; set; }
     public string[] Folders { get; set; } = [];
     public bool IncludeSubdirectories { get; set; }
-    public string[] Extensions { get; set; } = [".pdf", ".docx", ".docm", ".xlsx", ".xlsm", ".xlsb", ".pptx", ".pptm", ".doc", ".xls", ".csv", ".rtf", ".txt", ".zip"];
+    public string[] Extensions { get; set; } = ["*"];
     public int QuietSeconds { get; set; } = 3;
 }
 public sealed class LoggingOptions

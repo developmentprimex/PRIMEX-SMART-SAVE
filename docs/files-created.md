@@ -41,6 +41,7 @@ These files were created in this initially empty repository across implementatio
 - `src/PrimEx.SmartSave.Core/Models/SaveModels.cs`
 - `src/PrimEx.SmartSave.Core/PrimEx.SmartSave.Core.csproj`
 - `src/PrimEx.SmartSave.Core/Services/ConfigurationStore.cs`
+- `src/PrimEx.SmartSave.Core/Services/MonitoringFileTypes.cs`
 - `src/PrimEx.SmartSave.Core/Services/NativeProtocol.cs`
 - `src/PrimEx.SmartSave.Core/Services/OperationStore.cs`
 - `src/PrimEx.SmartSave.Core/Services/PathRules.cs`

@@ -4,7 +4,7 @@ param(
     [ValidatePattern('^[a-p]{32}$')][string]$EdgeExtensionId,
     [string]$WixPath = 'wix',
     [Parameter(Mandatory=$true)][string]$WixUiExtension,
-    [string]$ProductVersion = '0.2.0',
+    [string]$ProductVersion = '0.2.1',
     [string]$RuntimeVersion = '10.0.8',
     [string]$OutputDirectory,
     [string]$OfflineFeed

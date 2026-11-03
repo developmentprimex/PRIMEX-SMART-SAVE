@@ -67,6 +67,15 @@ Locked files are retried until released while the agent is running; open Office
 documents may therefore prompt only after closing. Setup validates selected
 folders and never watches whole drives or application cache locations automatically.
 
+As of 0.2.1, `Monitoring.Extensions` defaults to `["*"]`, meaning all eligible
+completed file types, including images and extensionless files. The setup has an
+All completed file types checkbox (selected by default). Uncheck it for an
+explicit extension list such as `[".pdf", ".png"]`; wildcard/list mixtures and
+empty or malformed filters are rejected. On load, the exact two default lists
+from the earlier builds use `["*"]` in memory. Custom lists remain unchanged;
+the upgrade does not rewrite any configuration file or enable monitoring. A
+subsequent explicit Apply saves the effective selection.
+
 `StartWithWindows` is honored for `--startup` launches. The installer supplies
 the supported per-user Run entry; merely running a developer build does not
 register startup. Editing this value does not alter system policy or mapped drives.

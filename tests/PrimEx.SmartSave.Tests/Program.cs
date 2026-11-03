@@ -111,6 +111,46 @@ try
         await Throws<InvalidOperationException>(() => transfer.TransferAsync(req with { SourcePath = NewFile() }));
     });
     await Test("Default configuration safe", () => Sync(() => Assert(new AppOptions().Validate().Count == 0)));
+    await Test("All completed file types are the default, including images and extensionless files", () => Sync(() => {
+        string watched = Path.Combine(root, "all-types"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Folders = [watched];
+        Assert(MonitoringFileTypes.IncludesAll(options.Monitoring.Extensions));
+        var policy = new EligibleFilePolicy(options);
+        foreach (var name in new[] { "photo.png", "photo.JPG", "photo.jpeg", "scan.webp", "drawing.dwg", "archive.7z", "document.odt", "design.psd", "clip.mp4", "custom.xyz", "README" })
+        { string path = Path.Combine(watched, name); File.WriteAllText(path, "test"); Assert(policy.IsEligible(path)); }
+    }));
+    await Test("Wildcard still excludes partial downloads, temporary files, caches and recovery backups", () => Sync(() => {
+        string watched = Path.Combine(root, "wildcard-filter"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true;
+        var policy = new EligibleFilePolicy(options);
+        foreach (var relative in new[] { "image.png.crdownload", "image.png.part", "image.png.partial", "image.png.filepart", "report.tmp", "report.lock", "~$report.docx", "desktop.ini", "thumbs.db", "report.pdf.primex-backup-123", @"Cache\image.png", @"node_modules\image.png", @"bin\image.png", @"obj\image.png", @".git\image.png", @"AppData\image.png", @"PrimEx Smart Save Staging\job\image.png" })
+        { string path = Path.Combine(watched, relative); Directory.CreateDirectory(Path.GetDirectoryName(path)!); File.WriteAllText(path, "ignore"); Assert(!policy.IsEligible(path)); }
+    }));
+    await Test("Explicit file type restrictions remain effective", () => Sync(() => {
+        var options = new AppOptions(); options.Monitoring.Folders = [root]; options.Monitoring.Extensions = [".pdf"];
+        string image = Path.Combine(root, "restricted.png"), pdf = Path.Combine(root, "restricted.pdf"); File.WriteAllText(image, "image"); File.WriteAllText(pdf, "pdf");
+        var policy = new EligibleFilePolicy(options); Assert(!policy.IsEligible(image) && policy.IsEligible(pdf));
+        Assert(!MonitoringFileTypes.IsValid(["*", ".pdf"]) && !MonitoringFileTypes.IsValid([]) && !MonitoringFileTypes.IsValid([".pn?"]));
+    }));
+    await Test("Old shipped defaults upgrade without rewriting settings or changing destinations", () => Sync(() => {
+        foreach (var defaults in new[] {
+            new[] { ".pdf", ".docx", ".xlsx", ".pptx", ".doc", ".xls", ".zip" },
+            new[] { ".pdf", ".docx", ".docm", ".xlsx", ".xlsm", ".xlsb", ".pptx", ".pptm", ".doc", ".xls", ".csv", ".rtf", ".txt", ".zip" } })
+        {
+            var old = new AppOptions { StartWithWindows = false, GuidanceSetupCompleted = true };
+            old.Monitoring.Enabled = true; old.Monitoring.Folders = [root]; old.Monitoring.Extensions = defaults;
+            old.CompanyServer.ApprovedRoots = [@"\\test\share"];
+            string path = Path.Combine(root, Guid.NewGuid() + ".json"), json = System.Text.Json.JsonSerializer.Serialize(old); File.WriteAllText(path, json);
+            var loaded = AppOptions.Load(path);
+            Assert(MonitoringFileTypes.IncludesAll(loaded.Monitoring.Extensions) && loaded.Monitoring.Enabled && loaded.Monitoring.Folders.Single() == root);
+            Assert(!loaded.StartWithWindows && loaded.GuidanceSetupCompleted && loaded.CompanyServer.ApprovedRoots.Single() == @"\\test\share" && File.ReadAllText(path) == json);
+        }
+    }));
+    await Test("Loading custom file filters does not expand them", () => Sync(() => {
+        var options = new AppOptions(); options.Monitoring.Extensions = [".pdf", ".png"];
+        string path = Path.Combine(root, "custom-types.json"); File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(options));
+        Assert(AppOptions.Load(path).Monitoring.Extensions.SequenceEqual(new[] { ".pdf", ".png" }));
+    }));
     await Test("Agent instance lease detects a duplicate and releases cleanly", () => Sync(() => {
         string data = Path.Combine(root, "instance"); Directory.CreateDirectory(data);
         using (var first = AgentInstanceLease.TryAcquire(data)) { Assert(first != null); using var second = AgentInstanceLease.TryAcquire(data); Assert(second == null); }

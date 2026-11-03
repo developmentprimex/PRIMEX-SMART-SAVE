@@ -1,7 +1,7 @@
-# Staff MSI 0.2.0 — per-user pilot
+# Staff MSI 0.2.1 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer/PrimEx.SmartSave-0.2.0-win-x64.msi`.
+`artifacts/staff-installer-0.2.1/PrimEx.SmartSave-0.2.1-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
@@ -37,7 +37,7 @@ the matching WixToolset.UI.wixext extension. Keep build tools outside the instal
 payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.1
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -48,6 +48,14 @@ The builder refuses to overwrite an existing output directory. Component IDs and
 GUIDs are stable for each relative payload path, and every component has an HKCU
 registry key path suitable for a per-user installation. Developer state/PDBs are
 rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
+
+0.2.1 defaults to All completed file types, so images such as PNG/JPG downloaded
+from Teams do not require manual extension setup. The exact extension defaults
+shipped in previous builds are upgraded on load; selected folders, company roots,
+startup choice and pending operations are preserved. Custom extension lists are
+retained. Exit 0.2.0 from the tray, install 0.2.1 as the same user, reopen the
+installed shortcut and test with a newly downloaded file. No employee PC updates
+automatically from GitHub or from the installer on this development machine.
 
 To additionally include/register the native host, pass `--extension-id <actual-id>`
 once per approved Chrome/Edge extension ID. This does not install the extension

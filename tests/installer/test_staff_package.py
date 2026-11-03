@@ -55,6 +55,7 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual([], options["CompanyServer"]["ApprovedRoots"])
         self.assertTrue(options["SmartSave"]["AllowOutsideServer"])
         self.assertTrue(options["StartWithWindows"])
+        self.assertEqual(["*"], options["Monitoring"]["Extensions"])
 
     def test_private_state_directory_rejected(self):
         with tempfile.TemporaryDirectory(prefix="PrimEx-Package-Test-") as temporary:
@@ -122,7 +123,7 @@ class MsiTests(unittest.TestCase):
     def test_identity_and_user_scope(self):
         properties = dict(self.db.rows("SELECT `Property`, `Value` FROM `Property`", 2))
         self.assertEqual("PrimEx Smart Save", properties["ProductName"])
-        self.assertEqual("0.2.0", properties["ProductVersion"])
+        self.assertEqual("0.2.1", properties["ProductVersion"])
         self.assertNotIn(properties.get("ALLUSERS"), ("1", "2"))
         self.assertEqual("{74FC93D4-971F-4D60-8FA7-226C2AB7E5AE}", properties["UpgradeCode"])
 

@@ -39,9 +39,21 @@ This is **after-save guidance**, not a popup before every Save or Download. Offi
 save-event add-ins are still unimplemented. A file watcher cannot reliably infer
 manual intent, so background changes to eligible documents in selected folders
 can also be detected. Application caches, temporary downloads, Office lock files,
-hidden/system files and browser staging folders are excluded. Defaults cover
-PDF, Word/Excel/PowerPoint formats, CSV, RTF, text and ZIP; the visible file-types
-box controls the exact extensions. No entire-drive monitoring is allowed.
+hidden/system files and browser staging folders are excluded. Version 0.2.1
+defaults to **All completed file types**, including PNG/JPG and other images,
+PDFs, Office documents, archives, media, unfamiliar extensions and files without
+an extension. No entire-drive monitoring is allowed. The original two shipped
+default extension lists automatically use this new default when loaded, without
+rewriting the existing configuration or changing selected folders/company roots.
+An explicitly customized list remains restricted. To restrict formats, uncheck
+All completed file types and enter the desired extensions in Specific file types.
+
+All-types mode does not include unfinished `.crdownload`, `.part`, `.partial`,
+`.download`, `.filepart`, temporary/lock files, Office lock files, hidden/system
+files, PrimEx recovery backups or cache/build subfolders such as Cache, AppData,
+node_modules, .git, .vs, bin and obj inside the selected roots. It never executes
+files. Choosing a broad recursive folder can produce more prompts; keep the scope
+limited to the document/download folders you actually want to guide.
 
 Open Office files are retried while locked rather than discarded after two
 minutes. The pending table remains bounded. A browser-style final rename from
