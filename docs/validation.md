@@ -23,12 +23,12 @@ This was artifact organization only; application tests were not rerun.
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
 | Core/filesystem/security/configuration/monitoring executable harness | 65 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 26 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 28 passed, zero failed |
 | Node browser policy and MV3 worker tests | 8 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.6, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.7, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -201,6 +201,30 @@ installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
 installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
+
+Compact placement follow-up (0.2.7): Files PX and Downloads now occupy one row in
+a 480-DIP prompt with tighter spacing. The warning is initially collapsed. Clicking
+Downloads reveals the advisory and Vazhdo me Downloads / Kthehu in the same window.
+Only confirmation sets KeepChosen and persists the local choice. Kthehu/Escape
+collapse the warning; Files PX remains available and X cancels without consent.
+In the manual/browser screen the warning follows the Downloads radio selection.
+Both initial/expanded prompts were rendered and visually inspected. Release build
+passed without warnings/errors; 28 desktop checks passed, including two new modal
+paths for cancelling the warning and switching back to the company folder picker.
+Existing modal coverage also verifies that the local choice remains unrecorded
+before confirmation, survives a later save/reopened selector after confirmation,
+and that the manual screen's warning follows its selected destination.
+
+0.2.7 MSI: `artifacts/staff-installer-0.2.7/PrimEx.SmartSave-0.2.7-win-x64.msi`
+(58,159,656 bytes), SHA-256
+`84ee3eb79409f6f498bd4a7b75c51eb1935f0a6b667ed41ec3850f9026624cad`.
+All 479 embedded files were extracted and hash-verified; 10 installer and six
+reconstructed-image runtime checks passed, alongside the 28 desktop checks
+(44 relevant checks). Core/browser suites were unchanged and not rerun. The
+previous 0.2.6 distribution and generated 0.2.7 test/build payloads are archived,
+leaving the active installer folder with only MSI, checksum and staff instructions.
+The package remains unsigned; actual MSI upgrade/sign-in and pilot hardware
+accessibility/Office/SMB acceptance remain manual gates.
 
 Warning wording follow-up (0.2.6): the Downloads advisory now reads "Kujdes:
 Vetëm për dokumente provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të

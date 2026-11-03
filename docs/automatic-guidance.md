@@ -4,10 +4,14 @@ In 0.2.4 the two choices are named **Files PX** (company server) and **Downloads
 (keep the current local folder). Downloads is the local-choice label: a document
 already on Desktop/Documents stays there rather than being moved to Downloads.
 
-Version 0.2.5 displays an Albanian advisory inside Downloads: **Kujdes: Vetëm për
+Version 0.2.7 places Files PX and Downloads side by side in a compact prompt.
+Only clicking Downloads reveals the Albanian advisory: **Kujdes: Vetëm për
 dokumente provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të punës ruajini
-në Files PX.** It is visible in both placement screens and available as accessible
-help text. The local option remains available and keeps its existing behavior.
+në Files PX.** Click **Vazhdo me Downloads** to keep the file and remember the
+choice, or **Kthehu** to return. Escape first dismisses the warning; X closes
+without remembering a choice. Files PX stays available. In the manual/browser
+destination screen the warning appears only when Downloads is selected, before
+the existing Confirm destination action. Local saving remains available.
 
 Open the updated desktop app and click **Automatic guidance…**. Select **Enable
 automatic guidance on this PC**, check Downloads and any other local folders you
@@ -34,7 +38,7 @@ After setup, continue using applications normally:
 | Save an Excel/Word/PDF file in a selected folder | Suggest after the file becomes quiet and unlocked; an application retaining a lock can delay it until close |
 | Save in a selected subfolder | Covered only if Include subfolders is checked |
 | Save in another folder | Add that particular local folder to setup to cover it |
-| Downloads | Leave the file untouched and persist this choice for later saves to the same path with the same creation timestamp, including after restart |
+| Downloads | Show the advisory; Vazhdo me Downloads leaves the file untouched and persists the choice for later saves to the same path with the same creation timestamp, including after restart |
 | Files PX | Opens the company-folder browser directly; select a folder and click Move here. It does not repeat the Files PX / Downloads question |
 
 The company-folder step opens the native Windows Shell folder picker, with

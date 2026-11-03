@@ -102,3 +102,15 @@ Test X/Escape and cancellation of company selection: these must not persist a Ke
 choice. Files already in an approved server root must not prompt. Save As remains
 the original application's dialog and choosing a different path creates a new
 candidate. Confirm no local copy is automatically copied onto a server version.
+# Compact placement prompt (0.2.7)
+
+Create a new disposable file in a watched folder. Verify Files PX and Downloads
+appear in one row and the warning is initially hidden. Click Files PX: company
+folder navigation should open immediately. On another new file, click Downloads:
+the same window expands to show the warning. Kthehu and Escape must collapse it;
+X must close without remembering a choice. Vazhdo me Downloads must keep the file
+and remember it across repeated saves/restarts. A pending local choice must never
+be remembered before that confirmation. In the manual/browser Save dialog, the
+warning should appear only while Downloads is selected. Check keyboard focus,
+screen-reader announcement, DPI and narrow displays. Existing Downloads test cases
+below now require Vazhdo me Downloads to finalize a keep choice.

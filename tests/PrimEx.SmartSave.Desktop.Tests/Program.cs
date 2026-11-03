@@ -160,13 +160,18 @@ internal static class Program
             await Test("Smart Save WPF window loads with Company Server selected", async () => {
                 var dialog = new SaveDialog(request, servers, resolver); dialog.Show(); dialog.UpdateLayout();
                 Assert(((RadioButton)dialog.FindName("CompanyOption")).IsChecked == true);
+                Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Collapsed);
                 Assert(dialog.IsVisible && dialog.ActualWidth >= 530);
                 string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
                 var bitmap = new RenderTargetBitmap((int)dialog.ActualWidth, (int)dialog.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(dialog);
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "smart-save.png"))) encoder.Save(stream);
+                ((RadioButton)dialog.FindName("OutsideOption")).IsChecked = true; dialog.UpdateLayout();
+                Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Visible);
+                ((RadioButton)dialog.FindName("CompanyOption")).IsChecked = true; dialog.UpdateLayout();
+                Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Collapsed);
                 dialog.Close(); await Task.CompletedTask;
             });
-            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape" })
+            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape", "CancelWarning", "WarningToServer" })
             {
                 await Test("Post-save " + scenario + " does not repeat destination-type choice", async () => {
                     string company = Path.Combine(root, "company-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(company);
@@ -176,7 +181,7 @@ internal static class Program
                     var remembered = new RememberedLocationStore(rememberedFolder);
                     var owner = new Window { Title = "Isolated post-save flow test", Width = 400, Height = 200 }; owner.Show();
                     var previousOwner = Application.Current.MainWindow; Application.Current.MainWindow = owner;
-                    bool promptSeen = false, browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false;
+                    bool promptSeen = false, browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false, warningSeen = false;
                     var elapsed = Stopwatch.StartNew(); var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
                     driver.Tick += (_, _) => {
                         if (elapsed.Elapsed > TimeSpan.FromSeconds(8))
@@ -190,6 +195,7 @@ internal static class Program
                         if (!promptSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt)
                         {
                             promptSeen = true;
+                            Assert(((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !prompt.KeepChosen);
                             if (scenario == "Keep")
                             {
                                 prompt.UpdateLayout();
@@ -199,8 +205,34 @@ internal static class Program
                             }
                             if (scenario == "Close") prompt.Close();
                             else if (scenario == "Escape") System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt);
-                            else if (scenario == "Keep") ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            else if (scenario is "Keep" or "CancelWarning" or "WarningToServer") ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             else ((Button)prompt.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            return;
+                        }
+                        if (!warningSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible && ((Border)x.FindName("WarningPanel")).Visibility == Visibility.Visible) is { } warning)
+                        {
+                            warningSeen = true;
+                            Assert(!warning.KeepChosen && !remembered.Contains(source) && File.Exists(source));
+                            if (scenario == "Keep")
+                            {
+                                warning.UpdateLayout();
+                                string preview = Path.GetFullPath("artifacts/verification/post-save-warning.png");
+                                var bitmap = new RenderTargetBitmap((int)warning.ActualWidth, (int)warning.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(warning);
+                                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var output = File.Create(preview)) encoder.Save(output);
+                                ((Button)warning.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            }
+                            else if (scenario == "CancelWarning")
+                            {
+                                System.Windows.Input.ApplicationCommands.Close.Execute(null, warning);
+                                Assert(warning.IsVisible && ((Border)warning.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !warning.KeepChosen);
+                                warning.Close();
+                            }
+                            else if (scenario == "WarningToServer")
+                            {
+                                ((Button)warning.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                Assert(((Border)warning.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !warning.KeepChosen);
+                                ((Button)warning.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            }
                             return;
                         }
                         if (!submitted && Application.Current.Windows.OfType<CompanyMoveDialog>().FirstOrDefault(x => x.IsVisible) is { } browser && ((Button)browser.FindName("MoveButton")).IsEnabled)
@@ -220,8 +252,9 @@ internal static class Program
                     {
                         var selected = await new WpfDestinationSelector(companyService, resolver, nativePicker, remembered).SelectAsync(request with { Integration = "Monitoring" });
                         Assert(!timedOut && promptSeen && !repeatedChoice && File.Exists(source));
-                        if (scenario == "Move") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName);
+                        if (scenario is "Move" or "WarningToServer") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName);
                         else Assert(selected == null && nativePicker.Calls == (scenario == "CancelFolder" ? 1 : 0));
+                        Assert(warningSeen == (scenario is "Keep" or "CancelWarning" or "WarningToServer"));
                         Assert(remembered.Contains(source) == (scenario == "Keep"));
                         if (scenario == "Keep")
                         {

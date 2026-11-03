@@ -1,7 +1,7 @@
-# Staff MSI 0.2.6 — per-user pilot
+# Staff MSI 0.2.7 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.6/PrimEx.SmartSave-0.2.6-win-x64.msi`.
+`artifacts/staff-installer-0.2.7/PrimEx.SmartSave-0.2.7-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
@@ -11,9 +11,11 @@ ordinary Teams/browser downloads are covered by opt-in folder monitoring.
 remembered-choice behavior is unchanged. Downloads is a label for the local
 choice, not a command to move a Desktop/Documents file into the Downloads folder.
 
-0.2.6 adds a visible Albanian advisory inside the Downloads choice, recommending
-Files PX for important work documents and Downloads for test documents/nonessential
-copies. It does not add restrictions or change save/transfer behavior.
+0.2.7 places Files PX and Downloads in one compact row. The Albanian advisory is
+hidden until Downloads is clicked. Vazhdo me Downloads confirms the local choice;
+Kthehu/Escape return to the initial prompt without recording consent. The normal
+manual/browser screen shows the advisory when its Downloads choice is selected.
+There are no new save restrictions or automatic transfers.
 
 The MSI installs for the signed-in user under
 `%LOCALAPPDATA%\PrimEx\SmartSaveApp\Desktop`, creates Desktop and Start-menu
@@ -46,7 +48,7 @@ the matching WixToolset.UI.wixext extension. Keep build tools outside the instal
 payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.6
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.7
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -62,7 +64,7 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.6 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.7 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 

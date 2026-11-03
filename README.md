@@ -10,13 +10,13 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.6/PrimEx.SmartSave-0.2.6-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.7/PrimEx.SmartSave-0.2.7-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
 enabled. See [deployment details and validation limits](installer/README.md).
 
-The current installer folder contains only the 0.2.6 MSI, its SHA-256 checksum and
+The current installer folder contains only the 0.2.7 MSI, its SHA-256 checksum and
 staff instructions. Older installers and generated test/publish copies are kept
 separately in `artifacts/_ARKIV-VERSIONE-TE-VJETRA`; use only the current installer
 linked above. Source code, build tools and user configuration are retained.
