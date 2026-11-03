@@ -77,3 +77,16 @@ and test clean install, dependencies, repair, version upgrade, downgrade prevent
 startup opt-out and uninstall. Confirm uninstall retains config/journal/staging
 documents and removes only product registration. Pilot Intune/GPO user-context
 deployment before broader assignment. No policy changes were made in development.
+# Native company folder picker (0.2.2)
+
+Use disposable local test roots first. Enable monitoring for a separate temporary
+download folder, configure two approved test company roots, then save a new sample.
+Choose Move to Company Server. Confirm Windows Shell breadcrumb navigation,
+search, This PC, New folder and company-root shortcuts work. Select a child folder,
+click Select Folder, review the filename, then click Move here. Verify exact bytes
+at the destination and source removal only after success. Repeat with a filename
+conflict, Cancel in the shell picker, Cancel in final confirmation, and a selection
+outside approved roots (must be rejected). Confirm Keep Current Location appears
+only in the initial prompt. Test Alt/Tab/Escape, screen reader labels and DPI.
+Only afterward use an IT-approved disposable SMB test directory to check mapped
+drive/UNC equivalence and server outage. Never use existing company documents.

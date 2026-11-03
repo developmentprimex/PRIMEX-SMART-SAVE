@@ -162,6 +162,7 @@ internal static class Program
                 await Test("Post-save " + scenario + " does not repeat destination-type choice", async () => {
                     string company = Path.Combine(root, "company-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(company);
                     var companyService = new ServerFolderService(new() { ApprovedRoots = [company], DiscoverMappedDrives = false }, resolver);
+                    var nativePicker = new FixedCompanyFolderPicker(scenario == "CancelFolder" ? null : company);
                     var owner = new Window { Title = "Isolated post-save flow test", Width = 400, Height = 200 }; owner.Show();
                     var previousOwner = Application.Current.MainWindow; Application.Current.MainWindow = owner;
                     bool promptSeen = false, browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false;
@@ -182,7 +183,7 @@ internal static class Program
                             else ((Button)prompt.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             return;
                         }
-                        if (!submitted && Application.Current.Windows.OfType<ServerBrowser>().FirstOrDefault(x => x.IsVisible) is { } browser && ((Button)browser.FindName("SelectButton")).IsEnabled)
+                        if (!submitted && Application.Current.Windows.OfType<CompanyMoveDialog>().FirstOrDefault(x => x.IsVisible) is { } browser && ((Button)browser.FindName("MoveButton")).IsEnabled)
                         {
                             browserSeen = true; submitted = true;
                             Assert(((Button)browser.FindName("CancelButton")).Content.ToString() == "Cancel");
@@ -191,24 +192,35 @@ internal static class Program
                             string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
                             var bitmap = new RenderTargetBitmap((int)browser.ActualWidth, (int)browser.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(browser);
                             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "company-move.png"))) encoder.Save(stream);
-                            ((Button)browser.FindName("SelectButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            ((Button)browser.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                         }
                     };
                     driver.Start();
                     try
                     {
-                        var selected = await new WpfDestinationSelector(companyService, resolver).SelectAsync(request with { Integration = "Monitoring" });
+                        var selected = await new WpfDestinationSelector(companyService, resolver, nativePicker).SelectAsync(request with { Integration = "Monitoring" });
                         Assert(!timedOut && promptSeen && !repeatedChoice && File.Exists(source));
                         if (scenario == "Move") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName);
-                        else Assert(selected == null && browserSeen == (scenario == "CancelFolder"));
+                        else Assert(selected == null && nativePicker.Calls == (scenario == "CancelFolder" ? 1 : 0));
                     }
                     finally { driver.Stop(); owner.Close(); Application.Current.MainWindow = previousOwner; }
                 });
             }
-            await Test("Server browser shows configured real root", async () => {
-                var browser = new ServerBrowser(servers); browser.Show();
-                for (int i = 0; i < 100 && ((ComboBox)browser.FindName("Roots")).Items.Count == 0; i++) await Task.Delay(10);
-                Assert(((ComboBox)browser.FindName("Roots")).Items.Count == 1); browser.Close();
+            await Test("Native Windows picker opens at approved root with company shortcuts", async () => {
+                var roots = servers.GetRoots();
+                var dialog = WindowsCompanyFolderPicker.CreateDialog(roots);
+                Assert(dialog.InitialDirectory == root && dialog.DefaultDirectory == root && !dialog.Multiselect && !dialog.AddToRecent);
+                Assert(dialog.CustomPlaces.Count == 1 && dialog.CustomPlaces[0].Path == root);
+                Assert(WindowsCompanyFolderPicker.CreateDialog(roots, root).InitialDirectory == root);
+                await Task.CompletedTask;
+            });
+            await Test("Native picker resolves approved folders and rejects outside roots", async () => {
+                var picker = new WindowsCompanyFolderPicker(servers, resolver);
+                Assert(picker.ResolveApprovedFolder(root) == root);
+                bool denied = false; try { picker.ResolveApprovedFolder(Path.GetTempPath().TrimEnd('\\')); } catch (UnauthorizedAccessException) { denied = true; }
+                Assert(denied);
+                bool unconfigured = false; try { WindowsCompanyFolderPicker.CreateDialog([]); } catch (InvalidDataException) { unconfigured = true; }
+                Assert(unconfigured); await Task.CompletedTask;
             });
             await Test("Destination view model validates and switches to outside", async () => {
                 var model = new SaveDialogViewModel(request, servers, resolver) { Folder = root };
@@ -267,5 +279,10 @@ internal static class Program
     {
         public bool Cancel { get; set; }
         public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default) => Task.FromResult<DestinationSelection?>(Cancel ? null : new(root, "moved-" + request.DisplayName, DestinationKind.OutsideServer, ConflictChoice.Cancel));
+    }
+    private sealed class FixedCompanyFolderPicker(string? folder) : ICompanyFolderPicker
+    {
+        public int Calls { get; private set; }
+        public Task<string?> PickAsync(Window owner, string? initialFolder = null) { Calls++; return Task.FromResult(folder); }
     }
 }

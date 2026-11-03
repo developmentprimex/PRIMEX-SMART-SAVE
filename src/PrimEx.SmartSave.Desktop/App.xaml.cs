@@ -58,6 +58,7 @@ public partial class App : Application
             collection.AddSingleton<ITransferService, SafeTransferService>();
             collection.AddSingleton(new OperationStore(Path.Combine(DataDirectory, "operations")));
             collection.AddSingleton<IDestinationSelector, WpfDestinationSelector>();
+            collection.AddSingleton<ICompanyFolderPicker, WindowsCompanyFolderPicker>();
             collection.AddSingleton<QueueViewModel>(); collection.AddSingleton<MainWindow>();
             services = collection.BuildServiceProvider();
             MainWindow = services.GetRequiredService<MainWindow>();
@@ -89,13 +90,20 @@ public partial class App : Application
     {
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("Open Smart Save", null, (_, _) => ShowMain());
-        menu.Items.Add("Open Company Server", null, (_, _) => {
-            ShowMain(); new ServerBrowser(services!.GetRequiredService<IServerFolderService>()) { Owner = MainWindow }.ShowDialog();
+        menu.Items.Add("Open Company Server", null, async (_, _) => {
+            ShowMain();
+            try
+            {
+                var folder = await services!.GetRequiredService<ICompanyFolderPicker>().PickAsync(MainWindow!);
+                if (folder != null) Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { folder }, UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or TimeoutException)
+            { services!.GetRequiredService<QueueViewModel>().Status = "Company folders are unavailable. Check your network connection and configured roots."; }
         });
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Automatic guidance…", null, async (_, _) => await OpenAutomaticGuidanceAsync());
         menu.Items.Add("View Pending Operations", null, (_, _) => ShowMain());
-        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.1\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
+        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.2\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
         menu.Items.Add("Exit", null, (_, _) => {
             var queue = services!.GetRequiredService<QueueViewModel>();
             if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before exiting."; ShowMain(); return; }

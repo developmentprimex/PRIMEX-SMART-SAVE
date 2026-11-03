@@ -3,15 +3,17 @@ using Microsoft.Win32;
 using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Desktop.ViewModels;
+using PrimEx.SmartSave.Desktop.Components;
 namespace PrimEx.SmartSave.Desktop.Views;
 public partial class SaveDialog : Window
 {
     private readonly SaveDialogViewModel model;
     private readonly IServerFolderService servers;
+    private readonly ICompanyFolderPicker companyPicker;
     public DestinationSelection? Selection { get; private set; }
     public SaveDialog(SaveRequest request, IServerFolderService servers, IPathResolver resolver)
     {
-        InitializeComponent(); this.servers = servers; model = new(request, servers, resolver); DataContext = model;
+        InitializeComponent(); this.servers = servers; companyPicker = new WindowsCompanyFolderPicker(servers, resolver); model = new(request, servers, resolver); DataContext = model;
         Loaded += (_, _) => CompanyOption.Focus();
     }
     private void BrowseOutside(object sender, RoutedEventArgs e)
@@ -19,10 +21,16 @@ public partial class SaveDialog : Window
         var dialog = new OpenFolderDialog { Title = "Save Outside Server — select a destination folder", Multiselect = false };
         if (dialog.ShowDialog(this) == true) model.Folder = dialog.FolderName;
     }
-    private void BrowseServer(object sender, RoutedEventArgs e)
+    private async void BrowseServer(object sender, RoutedEventArgs e)
     {
-        var browser = new ServerBrowser(servers) { Owner = this };
-        if (browser.ShowDialog() == true) model.Folder = browser.SelectedFolder!;
+        try
+        {
+            var folder = await companyPicker.PickAsync(this);
+            if (folder != null && IsVisible) model.Folder = folder;
+        }
+        catch (InvalidDataException ex) { model.Error = ex.Message; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or TimeoutException)
+        { model.Error = "The company folder browser is unavailable. Check your network connection or save outside the server."; }
     }
     private async void Confirm(object sender, RoutedEventArgs e)
     {

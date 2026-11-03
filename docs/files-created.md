@@ -1,5 +1,4 @@
-# Exact source-file inventory
-These files were created in this initially empty repository across implementation and follow-up fixes. Generated bin/obj/artifacts files are excluded.
+﻿# Exact source-file inventory
 
 - `.gitignore`
 - `config/appsettings.example.json`
@@ -52,6 +51,7 @@ These files were created in this initially empty repository across implementatio
 - `src/PrimEx.SmartSave.Desktop/Components/AgentActivationService.cs`
 - `src/PrimEx.SmartSave.Desktop/Components/NativePipeServer.cs`
 - `src/PrimEx.SmartSave.Desktop/Components/StartupError.cs`
+- `src/PrimEx.SmartSave.Desktop/Components/WindowsCompanyFolderPicker.cs`
 - `src/PrimEx.SmartSave.Desktop/Components/WpfDestinationSelector.cs`
 - `src/PrimEx.SmartSave.Desktop/GlobalUsings.cs`
 - `src/PrimEx.SmartSave.Desktop/PrimEx.SmartSave.Desktop.csproj`
@@ -62,18 +62,16 @@ These files were created in this initially empty repository across implementatio
 - `src/PrimEx.SmartSave.Desktop/ViewModels/SaveDialogViewModel.cs`
 - `src/PrimEx.SmartSave.Desktop/Views/AutomaticGuidanceDialog.xaml`
 - `src/PrimEx.SmartSave.Desktop/Views/AutomaticGuidanceDialog.xaml.cs`
+- `src/PrimEx.SmartSave.Desktop/Views/CompanyMoveDialog.xaml`
+- `src/PrimEx.SmartSave.Desktop/Views/CompanyMoveDialog.xaml.cs`
 - `src/PrimEx.SmartSave.Desktop/Views/ConflictDialog.xaml`
 - `src/PrimEx.SmartSave.Desktop/Views/ConflictDialog.xaml.cs`
-- `src/PrimEx.SmartSave.Desktop/Views/FolderNameDialog.xaml`
-- `src/PrimEx.SmartSave.Desktop/Views/FolderNameDialog.xaml.cs`
 - `src/PrimEx.SmartSave.Desktop/Views/MainWindow.xaml`
 - `src/PrimEx.SmartSave.Desktop/Views/MainWindow.xaml.cs`
 - `src/PrimEx.SmartSave.Desktop/Views/PostSaveDialog.xaml`
 - `src/PrimEx.SmartSave.Desktop/Views/PostSaveDialog.xaml.cs`
 - `src/PrimEx.SmartSave.Desktop/Views/SaveDialog.xaml`
 - `src/PrimEx.SmartSave.Desktop/Views/SaveDialog.xaml.cs`
-- `src/PrimEx.SmartSave.Desktop/Views/ServerBrowser.xaml`
-- `src/PrimEx.SmartSave.Desktop/Views/ServerBrowser.xaml.cs`
 - `src/PrimEx.SmartSave.FileManager/FileOperations/AgentInstanceLease.cs`
 - `src/PrimEx.SmartSave.FileManager/FileOperations/MarkOfTheWeb.cs`
 - `src/PrimEx.SmartSave.FileManager/FileOperations/SafeTransferService.cs`

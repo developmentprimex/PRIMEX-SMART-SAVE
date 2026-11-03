@@ -28,8 +28,13 @@ After setup, continue using applications normally:
 | Keep Current Location | Leave the file untouched; suppress further prompts for that path for 30 minutes in this agent session |
 | Move to Company Server | Opens the company-folder browser directly; select a folder and click Move here. It does not ask Company Server / Save Outside Server again |
 
-The company-folder step shows the filename, approved company roots and their
-accessible subfolders. Existing filenames still require Keep Both or explicitly
+The company-folder step opens the native Windows Shell folder picker, with
+breadcrumb navigation, search, This PC, mapped drives and New folder. It starts
+at an approved company root and adds configured roots as shortcuts. Windows
+controls its appearance and view preferences; it is a folder picker rather than
+a full standalone Explorer window. You can navigate elsewhere, but confirming
+a destination outside the configured company roots is rejected. Click Select
+Folder, then review the filename and click Move here. Existing filenames still require Keep Both or explicitly
 confirmed Replace. The folder step has **Cancel** and **Move here**; **Keep Current
 Location** appears only in the initial post-save question. Cancel leaves the source
 untouched. Manual Move a file and the explicit

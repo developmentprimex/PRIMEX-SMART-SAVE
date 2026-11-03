@@ -2,7 +2,7 @@ using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Desktop.Views;
 namespace PrimEx.SmartSave.Desktop.Components;
-public sealed class WpfDestinationSelector(IServerFolderService servers, IPathResolver resolver) : IDestinationSelector
+public sealed class WpfDestinationSelector(IServerFolderService servers, IPathResolver resolver, ICompanyFolderPicker picker) : IDestinationSelector
 {
     public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default)
     {
@@ -13,8 +13,8 @@ public sealed class WpfDestinationSelector(IServerFolderService servers, IPathRe
                 return Task.FromResult<DestinationSelection?>(null);
             // The user has already chosen Company Server. Ask only for the folder,
             // filename and any explicit conflict decision, without repeating the choice.
-            var browser = new ServerBrowser(servers, request) { Owner = Application.Current.MainWindow };
-            browser.ShowDialog(); return Task.FromResult(browser.MoveSelection);
+            var browser = new CompanyMoveDialog(request, servers, picker) { Owner = Application.Current.MainWindow };
+            browser.ShowDialog(); return Task.FromResult(browser.Selection);
         }
         var dialog = new SaveDialog(request, servers, resolver) { Owner = Application.Current.MainWindow };
         dialog.ShowDialog(); return Task.FromResult(dialog.Selection);

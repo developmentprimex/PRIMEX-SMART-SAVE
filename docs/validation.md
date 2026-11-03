@@ -12,12 +12,12 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
 | Core/filesystem/security/configuration/monitoring executable harness | 61 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 23 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 24 passed, zero failed |
 | Node browser policy and MV3 worker tests | 8 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.1, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.2, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -74,7 +74,7 @@ Tests cover real modal setup Apply, configuration preservation and concurrent-ed
 rejection, Windows known-folder lookup, scope boundaries, partial-download
 exclusion and a real watcher detecting a browser-style completion rename. Rendered
 `artifacts/verification/automatic-guidance.png` was visually inspected. The total
-automated count is now 108. An additional test launches the actual desktop agent
+automated count is now 109. An additional test launches the actual desktop agent
 with isolated opt-in monitoring and confirms that synthetic PDF/Word saves and
 a completed Excel-style download automatically enter its durable queue without
 clicking Move a file. Partial downloads are excluded and every source remains
@@ -163,6 +163,31 @@ did not continue manipulating it. If still present, close it through its normal
 file-picker Cancel button and tray Exit. The signed-in-user process could not be
 terminated from the restricted build account. This does not affect the separately
 published Release package or test results.
+
+## Native company folder picker release
+
+Native folder browser follow-up (0.2.2): replaced the custom company tree with
+Microsoft.Win32.OpenFolderDialog. Both the monitoring move flow and Browse server
+folders use Windows Shell navigation. Only approved roots can be committed after
+mapped-drive resolution. The post-save flow opens the shell picker first, then
+shows a compact filename/folder confirmation with Cancel and Move here. Source
+files remain untouched until confirmation; permission probes and explicit conflict
+decisions still run at confirmation. No writes are made just by opening the picker.
+
+The 24 desktop checks include picker settings/root approval and three real WPF
+modal paths with an injected picker result (move, cancel and keep). The compact
+confirmation was rendered and visually inspected. Interactive preview input did
+not capture the native modal reliably; native Shell navigation, mapped SMB drives
+and keyboard/DPI behavior remain manual pilot checks. Automated modal checks do
+not certify a real Shell interaction or company share.
+
+0.2.2 MSI: `artifacts/staff-installer-0.2.2/PrimEx.SmartSave-0.2.2-win-x64.msi`
+(58,163,752 bytes), SHA-256
+`ce3c02b67e29bdc29d3ced66afa4b62da411e6743fd153c03a00dc220a462ed4`.
+All 479 embedded files were extracted and hash-verified; all six runtime checks
+passed against the reconstructed extracted image. Core 61, desktop 24, browser 8,
+installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
+installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
 
