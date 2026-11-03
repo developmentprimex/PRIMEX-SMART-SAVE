@@ -1,9 +1,10 @@
 using System.Collections.Concurrent;
 using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
+using PrimEx.SmartSave.Core.Services;
 namespace PrimEx.SmartSave.Monitoring.Watchers;
 // Reports post-save candidates only. Never moves files and cannot establish manual intent.
-public sealed class DirectoryMonitor(AppOptions options, IEventLog log) : IAsyncDisposable
+public sealed class DirectoryMonitor(AppOptions options, IEventLog log, RememberedLocationStore? locations = null) : IAsyncDisposable
 {
     private readonly List<FileSystemWatcher> watchers = [];
     private readonly ConcurrentDictionary<string, DateTimeOffset> pending = new(StringComparer.OrdinalIgnoreCase);
@@ -49,6 +50,7 @@ public sealed class DirectoryMonitor(AppOptions options, IEventLog log) : IAsync
                     if (DateTimeOffset.UtcNow - entry.Value < TimeSpan.FromSeconds(options.Monitoring.QuietSeconds)) continue;
                     if (!pending.TryRemove(new KeyValuePair<string, DateTimeOffset>(entry.Key, entry.Value))) continue;
                     if (!policy.IsEligible(entry.Key)) continue;
+                    if (locations?.Contains(entry.Key) == true) continue;
                     try
                     {
                         using var stream = new FileStream(entry.Key, FileMode.Open, FileAccess.Read, FileShare.None);

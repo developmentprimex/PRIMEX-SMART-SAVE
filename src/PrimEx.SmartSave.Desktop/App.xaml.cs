@@ -57,6 +57,7 @@ public partial class App : Application
             collection.AddSingleton<IServerFolderService>(s => new ServerFolderService(options.CompanyServer, s.GetRequiredService<IPathResolver>()));
             collection.AddSingleton<ITransferService, SafeTransferService>();
             collection.AddSingleton(new OperationStore(Path.Combine(DataDirectory, "operations")));
+            collection.AddSingleton(new RememberedLocationStore(Path.Combine(DataDirectory, "remembered-locations")));
             collection.AddSingleton<IDestinationSelector, WpfDestinationSelector>();
             collection.AddSingleton<ICompanyFolderPicker, WindowsCompanyFolderPicker>();
             collection.AddSingleton<QueueViewModel>(); collection.AddSingleton<MainWindow>();
@@ -103,7 +104,7 @@ public partial class App : Application
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Automatic guidance…", null, async (_, _) => await OpenAutomaticGuidanceAsync());
         menu.Items.Add("View Pending Operations", null, (_, _) => ShowMain());
-        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.2\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
+        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.3\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
         menu.Items.Add("Exit", null, (_, _) => {
             var queue = services!.GetRequiredService<QueueViewModel>();
             if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before exiting."; ShowMain(); return; }
@@ -121,7 +122,7 @@ public partial class App : Application
         {
             // A running watcher sees a fixed settings snapshot until explicitly reconfigured.
             var snapshot = JsonSerializer.Deserialize<AppOptions>(JsonSerializer.Serialize(options))!;
-            monitor = new DirectoryMonitor(snapshot, services!.GetRequiredService<IEventLog>());
+            monitor = new DirectoryMonitor(snapshot, services!.GetRequiredService<IEventLog>(), services!.GetRequiredService<RememberedLocationStore>());
             monitor.MissedEvents += () => Dispatcher.BeginInvoke(() => { if (generation == monitorGeneration) queue.Status = "Some folders or monitoring events are unavailable. Review the automatic guidance settings."; });
             monitor.Candidate += path => Dispatcher.BeginInvoke(async () => {
                 if (generation != monitorGeneration) return;

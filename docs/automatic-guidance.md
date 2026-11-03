@@ -25,7 +25,7 @@ After setup, continue using applications normally:
 | Save an Excel/Word/PDF file in a selected folder | Suggest after the file becomes quiet and unlocked; an application retaining a lock can delay it until close |
 | Save in a selected subfolder | Covered only if Include subfolders is checked |
 | Save in another folder | Add that particular local folder to setup to cover it |
-| Keep Current Location | Leave the file untouched; suppress further prompts for that path for 30 minutes in this agent session |
+| Keep Current Location | Leave the file untouched and persist this choice for later saves to the same path with the same creation timestamp, including after restart |
 | Move to Company Server | Opens the company-folder browser directly; select a folder and click Move here. It does not ask Company Server / Save Outside Server again |
 
 The company-folder step opens the native Windows Shell folder picker, with
@@ -81,5 +81,22 @@ and choose **Move to Company Server**. Use a new filename to avoid the 30-minute
 repeat-prompt suppression. Closing the main window hides it to tray; use tray
 Exit to stop the agent. Leave automatic guidance off on other PCs until pilot
 validation is complete.
+
+Version 0.2.3 remembers an explicit Keep choice using the normalized full path
+and creation timestamp, not the filename alone. Content/last-write changes do not
+invalidate the choice. Closing with X, Escape or cancelling the company-folder
+step does not create a remembered choice. Existing 30-minute event debounce still
+applies to undecided/cancelled candidates in the current monitor session.
+
+A different name or folder, or a changed creation timestamp, prompts as a new
+candidate. This is a conservative filesystem heuristic, not universal document
+identity: applications that recreate files with new creation times may prompt
+again, and a replacement preserving the old creation time can inherit the choice.
+Server documents remain excluded by the approved-root policy. Ordinary Save is
+performed by the original application at its current location; Smart Save does
+not bypass that application's Save As dialog, silently redirect a recreated local
+copy to the server, or automatically overwrite a server document. Use Move a file
+to explicitly relocate a previously kept document. Remembered choices start with
+new explicit Keep actions after the upgrade; prior cancellations are not migrated.
 
 Reference: [Windows known-folder lookup](https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/nf-shlobj_core-shgetknownfolderpath).

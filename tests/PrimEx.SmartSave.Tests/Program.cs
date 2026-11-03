@@ -243,6 +243,43 @@ try
         File.AppendAllText(doc, " changed"); await Task.Delay(1800);
         Assert(events.Count(x => x == doc) == 1);
     });
+    await Test("Remembered location survives edits and a new store instance", () => Sync(() => {
+        string data = Path.Combine(root, "remembered-edit"), document = NewFile();
+        var choices = new RememberedLocationStore(data);
+        Assert(!choices.Contains(document) && choices.Remember(document));
+        File.WriteAllText(document, "second save");
+        Assert(new RememberedLocationStore(data).Contains(document));
+        File.AppendAllText(document, "third save"); Assert(choices.Contains(document));
+        Assert(!File.ReadAllText(Directory.GetFiles(data).Single()).Contains(document));
+    }));
+    await Test("A different path or recreated file does not inherit a Keep choice", () => Sync(() => {
+        var choices = new RememberedLocationStore(Path.Combine(root, "remembered-new"));
+        string first = NewFile(), copy = first + ".new.txt"; File.Copy(first, copy);
+        Assert(choices.Remember(first) && !choices.Contains(copy));
+        DateTime created = File.GetCreationTimeUtc(first);
+        File.SetCreationTimeUtc(first, created.AddMinutes(1)); Assert(!choices.Contains(first));
+        Assert(!choices.Contains(first + ".missing") && !choices.Remember(first + ".missing"));
+    }));
+    await Test("Damaged or unavailable location memory never suppresses a prompt", () => Sync(() => {
+        string data = Path.Combine(root, "remembered-damaged"), document = NewFile();
+        var choices = new RememberedLocationStore(data); Assert(choices.Remember(document));
+        File.WriteAllText(Directory.GetFiles(data).Single(), "damaged"); Assert(!choices.Contains(document));
+        Assert(choices.Remember(document) && choices.Contains(document));
+        Directory.Delete(data, true); File.WriteAllText(data, "not a directory");
+        Assert(!choices.Contains(document) && !choices.Remember(document));
+    }));
+    await Test("Restarted watcher skips repeated saves only for explicitly remembered files", async () => {
+        string watched = Path.Combine(root, "remembered-watch"); Directory.CreateDirectory(watched);
+        string document = Path.Combine(watched, "existing.txt"); File.WriteAllText(document, "first save");
+        string memory = Path.Combine(root, "remembered-watch-state"); Assert(new RememberedLocationStore(memory).Remember(document));
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.QuietSeconds = 1;
+        var events = new ConcurrentQueue<string>();
+        await using var monitor = new DirectoryMonitor(options, log, new RememberedLocationStore(memory)); monitor.Candidate += events.Enqueue; monitor.Start();
+        File.WriteAllText(document, "second save"); await Task.Delay(1600);
+        File.WriteAllText(document, "third save"); string other = Path.Combine(watched, "new.txt"); File.WriteAllText(other, "new document");
+        for (int i = 0; i < 60 && !events.Contains(other); i++) await Task.Delay(100);
+        Assert(events.Count == 1 && events.Single() == other && File.ReadAllText(document) == "third save");
+    });
     await Test("Disabled watcher has no filesystem subscriptions", async () => {
         var options = new AppOptions(); options.Monitoring.Folders = [root];
         int count = 0; await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += _ => Interlocked.Increment(ref count); monitor.Start();

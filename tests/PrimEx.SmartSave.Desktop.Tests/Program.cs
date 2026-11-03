@@ -157,12 +157,14 @@ internal static class Program
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "smart-save.png"))) encoder.Save(stream);
                 dialog.Close(); await Task.CompletedTask;
             });
-            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep" })
+            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape" })
             {
                 await Test("Post-save " + scenario + " does not repeat destination-type choice", async () => {
                     string company = Path.Combine(root, "company-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(company);
                     var companyService = new ServerFolderService(new() { ApprovedRoots = [company], DiscoverMappedDrives = false }, resolver);
                     var nativePicker = new FixedCompanyFolderPicker(scenario == "CancelFolder" ? null : company);
+                    string rememberedFolder = Path.Combine(company, "remembered");
+                    var remembered = new RememberedLocationStore(rememberedFolder);
                     var owner = new Window { Title = "Isolated post-save flow test", Width = 400, Height = 200 }; owner.Show();
                     var previousOwner = Application.Current.MainWindow; Application.Current.MainWindow = owner;
                     bool promptSeen = false, browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false;
@@ -179,7 +181,9 @@ internal static class Program
                         if (!promptSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt)
                         {
                             promptSeen = true;
-                            if (scenario == "Keep") prompt.Close();
+                            if (scenario == "Close") prompt.Close();
+                            else if (scenario == "Escape") System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt);
+                            else if (scenario == "Keep") ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             else ((Button)prompt.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             return;
                         }
@@ -198,10 +202,18 @@ internal static class Program
                     driver.Start();
                     try
                     {
-                        var selected = await new WpfDestinationSelector(companyService, resolver, nativePicker).SelectAsync(request with { Integration = "Monitoring" });
+                        var selected = await new WpfDestinationSelector(companyService, resolver, nativePicker, remembered).SelectAsync(request with { Integration = "Monitoring" });
                         Assert(!timedOut && promptSeen && !repeatedChoice && File.Exists(source));
                         if (scenario == "Move") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName);
                         else Assert(selected == null && nativePicker.Calls == (scenario == "CancelFolder" ? 1 : 0));
+                        Assert(remembered.Contains(source) == (scenario == "Keep"));
+                        if (scenario == "Keep")
+                        {
+                            File.AppendAllText(source, " saved again");
+                            var reopened = new WpfDestinationSelector(companyService, resolver, nativePicker, new RememberedLocationStore(rememberedFolder));
+                            Assert(await reopened.SelectAsync(request with { Integration = "Monitoring", Id = Guid.NewGuid() }) == null && !timedOut);
+                            File.WriteAllText(source, "isolated desktop test");
+                        }
                     }
                     finally { driver.Stop(); owner.Close(); Application.Current.MainWindow = previousOwner; }
                 });

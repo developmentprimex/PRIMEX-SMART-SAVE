@@ -52,3 +52,10 @@ Journals and browser local storage necessarily contain local file paths and IDs;
 they are user-private operational state, not exported diagnostics. The optional
 diagnostic export contains only version/runtime/OS and operation-state counts.
 Do not share the raw state directory as diagnostics without reviewing it.
+
+Explicit Keep choices are stored separately in `remembered-locations`, with
+SHA-256 keys of normalized paths and creation-time ticks. They contain no document
+contents or plaintext filenames. These local markers only suppress repeat advice;
+they never authorize file transfers or replacements. Damaged/unreadable markers
+do not suppress prompts. They are retained with user state on uninstall. No choice
+is persisted just because a dialog was closed/cancelled.

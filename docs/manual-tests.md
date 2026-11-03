@@ -90,3 +90,15 @@ outside approved roots (must be rejected). Confirm Keep Current Location appears
 only in the initial prompt. Test Alt/Tab/Escape, screen reader labels and DPI.
 Only afterward use an IT-approved disposable SMB test directory to check mapped
 drive/UNC equivalence and server outage. Never use existing company documents.
+
+## Repeated saves (0.2.3)
+
+In an isolated watched test folder, create a new TXT, choose Keep Current Location,
+then edit and Save it twice. Expect no further Smart Save prompt. Exit/reopen the
+agent and edit/Save again; still no prompt. Save As under a new name and expect a
+new post-save prompt. Repeat with Word, Excel and PDF editors, including atomic
+replacement save behavior; changed creation timestamps may cause another prompt.
+Test X/Escape and cancellation of company selection: these must not persist a Keep
+choice. Files already in an approved server root must not prompt. Save As remains
+the original application's dialog and choosing a different path creates a new
+candidate. Confirm no local copy is automatically copied onto a server version.

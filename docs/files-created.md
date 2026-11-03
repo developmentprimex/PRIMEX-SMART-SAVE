@@ -44,6 +44,7 @@
 - `src/PrimEx.SmartSave.Core/Services/NativeProtocol.cs`
 - `src/PrimEx.SmartSave.Core/Services/OperationStore.cs`
 - `src/PrimEx.SmartSave.Core/Services/PathRules.cs`
+- `src/PrimEx.SmartSave.Core/Services/RememberedLocationStore.cs`
 - `src/PrimEx.SmartSave.Core/Services/RotatingEventLog.cs`
 - `src/PrimEx.SmartSave.Desktop/app.manifest`
 - `src/PrimEx.SmartSave.Desktop/App.xaml`

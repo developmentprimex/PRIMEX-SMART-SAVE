@@ -11,13 +11,13 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 | Check | Result |
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
-| Core/filesystem/security/configuration/monitoring executable harness | 61 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 24 passed, zero failed |
+| Core/filesystem/security/configuration/monitoring executable harness | 65 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 26 passed, zero failed |
 | Node browser policy and MV3 worker tests | 8 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.2, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.3, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -190,6 +190,30 @@ installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
 installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
+
+Repeated-save follow-up (0.2.3): explicit Keep Current Location choices persist
+using a hashed normalized path plus creation timestamp. Content edits no longer
+prompt again, even across monitor/agent restarts. Different paths and changed
+creation times remain eligible. This is a filesystem heuristic, not guaranteed
+cross-application document identity. X, Escape and company-folder cancellation do
+not persist a Keep choice. Old queue cancellations are not migrated. There is no
+automatic server synchronization or interception of the original Save As dialog.
+
+Four additional core checks cover repeated writes/store reopening, different
+paths/recreated files, damaged/unavailable state and a real restarted watcher
+that ignores remembered edits while still reporting a new file. WPF tests now
+exercise explicit Keep followed by another save through a newly constructed
+selector/store; X and Escape paths verify no remembered consent. The full suite
+is 65 core + 26 desktop + 8 browser + 10 installer + 6 staff runtime = 115 passed.
+Real Word/Excel/PDF-editor replacement saves remain a manual pilot matrix.
+
+0.2.3 MSI: `artifacts/staff-installer-0.2.3/PrimEx.SmartSave-0.2.3-win-x64.msi`
+(58,176,040 bytes), SHA-256
+`9b95f27c5ca6f0d99680b7f12df0c334aaff0b52a7de4570f9adbf4dc06e5fcc`.
+All 479 files were extracted and verified against the published payload, and the
+six runtime checks passed against that reconstructed extracted image. The MSI
+remains unsigned; actual install/upgrade/uninstall and sign-in acceptance gates
+remain unchanged.
 
 1. Complete real browser and isolated SMB tests in manual-tests.md; expand coverage
    only through reliable explicit user actions and supported APIs.
