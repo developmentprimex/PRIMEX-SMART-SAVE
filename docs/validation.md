@@ -92,6 +92,12 @@ source remains untouched before transfer confirmation. The rendered folder step
 `artifacts/verification/company-move.png` was visually inspected. Conflict and
 permission checks remain in place; manual/browser destination dialogs are unchanged.
 
+Folder-step wording follow-up: removed Keep Current Location from the company
+folder selection step. It now offers Cancel and Move here, with the keep option
+only in the first post-save prompt. Error messages use the same cancellation
+wording. Existing modal regression checks verify the Cancel label and that
+cancelling does not move the source.
+
 NuGet network access is blocked. For this run the two existing Microsoft DI 8.0.0
 packages were copied from the user's existing package cache into an isolated
 workspace feed. Restore used that feed with vulnerability auditing disabled for

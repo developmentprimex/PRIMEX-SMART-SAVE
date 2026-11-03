@@ -30,8 +30,9 @@ After setup, continue using applications normally:
 
 The company-folder step shows the filename, approved company roots and their
 accessible subfolders. Existing filenames still require Keep Both or explicitly
-confirmed Replace. **Keep Current Location** remains available during folder
-selection and leaves the source untouched. Manual Move a file and the explicit
+confirmed Replace. The folder step has **Cancel** and **Move here**; **Keep Current
+Location** appears only in the initial post-save question. Cancel leaves the source
+untouched. Manual Move a file and the explicit
 browser-extension workflow still offer both original destination choices.
 
 This is **after-save guidance**, not a popup before every Save or Download. Office

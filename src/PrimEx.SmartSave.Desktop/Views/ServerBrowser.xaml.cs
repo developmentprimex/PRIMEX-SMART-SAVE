@@ -21,11 +21,11 @@ public partial class ServerBrowser : Window
             Title = "Move to Company Server"; Heading.Text = "Choose a company folder";
             Height = 640; MinHeight = 480; FileNamePanel.Visibility = Visibility.Visible;
             FileNameBox.Text = moveRequest.DisplayName;
-            SelectButton.Content = "_Move here"; CancelButton.Content = "_Keep Current Location";
+            SelectButton.Content = "_Move here";
         }
         SelectButton.IsEnabled = false;
         Loaded += async (_, _) => {
-            try { Roots.ItemsSource = await Task.Run(() => servers.GetRoots().Where(x => x.Approved).ToArray()).WaitAsync(TimeSpan.FromSeconds(10)); if (Roots.Items.Count > 0) Roots.SelectedIndex = 0; else Error.Text = moveMode ? "No approved company roots are configured. Configure a root in Automatic guidance, or Keep Current Location." : "No approved roots configured. Open Settings to add company UNC roots. Save Outside Server remains available."; }
+            try { Roots.ItemsSource = await Task.Run(() => servers.GetRoots().Where(x => x.Approved).ToArray()).WaitAsync(TimeSpan.FromSeconds(10)); if (Roots.Items.Count > 0) Roots.SelectedIndex = 0; else Error.Text = moveMode ? "No approved company roots are configured. Cancel and configure a root in Automatic guidance." : "No approved roots configured. Open Settings to add company UNC roots. Save Outside Server remains available."; }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or TimeoutException) { Error.Text = "Company roots are currently unavailable."; }
         };
     }
@@ -39,7 +39,7 @@ public partial class ServerBrowser : Window
             CurrentPath.Text = path; Folders.ItemsSource = folders; Error.Text = ""; SelectButton.IsEnabled = true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or TimeoutException or ArgumentException)
-        { if (thisGeneration == generation) Error.Text = moveMode ? "This company folder is unavailable or access was denied. Choose another company folder, or Keep Current Location." : "This folder is unavailable or access was denied. You can cancel and save outside the server."; }
+        { if (thisGeneration == generation) Error.Text = moveMode ? "This company folder is unavailable or access was denied. Choose another company folder, or cancel the move." : "This folder is unavailable or access was denied. You can cancel and save outside the server."; }
     }
     private async void RootChanged(object sender, SelectionChangedEventArgs e) { if (Roots.SelectedItem is ServerRoot root) await Navigate(root.Path); }
     private async void OpenFolder(object sender, MouseButtonEventArgs e) { if (Folders.SelectedItem is string path) await Navigate(path); }
@@ -74,14 +74,14 @@ public partial class ServerBrowser : Window
             if (!servers.IsApproved(folder)) throw new UnauthorizedAccessException();
             var status = await servers.CheckAsync(folder, true).WaitAsync(TimeSpan.FromSeconds(12));
             if (!IsVisible) return;
-            if (!status.Available) { Error.Text = "This company folder is unavailable or not writable. Choose another folder, or Keep Current Location."; return; }
+            if (!status.Available) { Error.Text = "This company folder is unavailable or not writable. Choose another folder, or cancel the move."; return; }
             bool exists = await Task.Run(() => File.Exists(Path.Combine(folder, name))).WaitAsync(TimeSpan.FromSeconds(12));
             if (!IsVisible) return;
             ConflictChoice conflict = ConflictChoice.Cancel;
             if (exists)
             {
                 var choice = new ConflictDialog { Owner = this };
-                if (choice.ShowDialog() != true) { Error.Text = "Choose a different filename or folder, or Keep Current Location."; return; }
+                if (choice.ShowDialog() != true) { Error.Text = "Choose a different filename or folder, or cancel the move."; return; }
                 conflict = choice.Choice;
             }
             MoveSelection = new(folder, name, DestinationKind.CompanyServer, conflict);
@@ -89,7 +89,7 @@ public partial class ServerBrowser : Window
         }
         catch (ArgumentException) { Error.Text = "Enter a valid filename."; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or TimeoutException)
-        { if (IsVisible) Error.Text = "The company folder is unavailable or access was denied. Choose another folder, or Keep Current Location."; }
+        { if (IsVisible) Error.Text = "The company folder is unavailable or access was denied. Choose another folder, or cancel the move."; }
         finally { BrowserPanel.IsEnabled = true; Folders.IsEnabled = true; SelectButton.IsEnabled = true; }
     }
 }

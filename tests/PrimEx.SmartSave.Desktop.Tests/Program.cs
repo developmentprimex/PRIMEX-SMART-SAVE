@@ -168,6 +168,7 @@ internal static class Program
                         if (!submitted && Application.Current.Windows.OfType<ServerBrowser>().FirstOrDefault(x => x.IsVisible) is { } browser && ((Button)browser.FindName("SelectButton")).IsEnabled)
                         {
                             browserSeen = true; submitted = true;
+                            Assert(((Button)browser.FindName("CancelButton")).Content.ToString() == "Cancel");
                             if (scenario == "CancelFolder") { browser.Close(); return; }
                             browser.UpdateLayout();
                             string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
