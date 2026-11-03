@@ -8,6 +8,17 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 
 ## Executed
 
+Artifact housekeeping (2026-11-03): 46 obsolete release/publish/test-payload targets
+were moved into `artifacts/_ARKIV-VERSIONE-TE-VJETRA`. Recursive deletion was denied
+by the environment's automatic approval policy, so nothing was permanently deleted.
+Every source/destination was resolved and checked inside the workspace artifacts
+directory before moving. Preview user state, normal app state, source repositories,
+build tools and package feeds were retained. The current 0.2.6 folder now contains
+only the MSI, checksum and copied staff instructions. The MSI's SHA-256 remains
+`ed70c4731293a3577ca01c62e69ad7a1391b42b9647cf7a106288792065f8730`.
+Historical extracted/published verification paths below now live under that archive.
+This was artifact organization only; application tests were not rerun.
+
 | Check | Result |
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |

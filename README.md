@@ -16,6 +16,11 @@ and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 opens configuration on first use, with monitoring disabled until explicitly
 enabled. See [deployment details and validation limits](installer/README.md).
 
+The current installer folder contains only the 0.2.6 MSI, its SHA-256 checksum and
+staff instructions. Older installers and generated test/publish copies are kept
+separately in `artifacts/_ARKIV-VERSIONE-TE-VJETRA`; use only the current installer
+linked above. Source code, build tools and user configuration are retained.
+
 ## Build and run
 
 Requirements: Windows, .NET SDK 10.0.300 or a compatible later feature band,
