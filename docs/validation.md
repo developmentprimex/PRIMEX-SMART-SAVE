@@ -17,7 +17,7 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.5, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.6, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -190,6 +190,22 @@ installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
 installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
+
+Warning wording follow-up (0.2.6): the Downloads advisory now reads "Kujdes:
+Vetëm për dokumente provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të
+punës ruajini në Files PX." Both placement screens and current staff guidance use
+the updated wording. This is a text-only change; transfer and selection behavior
+are unchanged.
+
+For 0.2.6 the Release build completed with zero warnings/errors, both rendered
+placement screens were visually inspected, and 26 desktop plus 10 installer
+checks passed (36 repeated checks). All 479 embedded files were extracted and
+hash-verified. Core/browser/runtime suites from the prior release were not rerun
+for this wording-only update. MSI:
+`artifacts/staff-installer-0.2.6/PrimEx.SmartSave-0.2.6-win-x64.msi`
+(58,159,656 bytes), SHA-256
+`ed70c4731293a3577ca01c62e69ad7a1391b42b9647cf7a106288792065f8730`.
+Signing and actual MSI upgrade/sign-in remain manual acceptance gates.
 
 Downloads advisory follow-up (0.2.5): added the Albanian warning inside the
 Downloads button and local destination choice, with wrapping amber text/background

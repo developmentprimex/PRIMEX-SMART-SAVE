@@ -5,7 +5,7 @@ In 0.2.4 the two choices are named **Files PX** (company server) and **Downloads
 already on Desktop/Documents stays there rather than being moved to Downloads.
 
 Version 0.2.5 displays an Albanian advisory inside Downloads: **Kujdes: Vetëm për
-dokumente provë dhe kopje jo thelbësore. Dokumentet e rëndësishme të punës ruajini
+dokumente provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të punës ruajini
 në Files PX.** It is visible in both placement screens and available as accessible
 help text. The local option remains available and keeps its existing behavior.
 

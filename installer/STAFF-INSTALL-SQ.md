@@ -1,6 +1,6 @@
 # PrimEx Smart Save — instalimi për stafin
 
-1. Kopjo `PrimEx.SmartSave-0.2.5-win-x64.msi` në kompjuterin e punonjësit.
+1. Kopjo `PrimEx.SmartSave-0.2.6-win-x64.msi` në kompjuterin e punonjësit.
 2. Nëse është hapur versioni i vjetër, mbylle nga ikona pranë orës me **Exit**.
 3. Hape MSI-në me llogarinë normale të punonjësit dhe përfundo instalimin.
    .NET është i përfshirë; nuk duhet instaluar veçmas. Paketa është për Windows x64.
@@ -24,7 +24,7 @@ Konfigurimi bëhet një herë për secilën llogari. Lejet ekzistuese të server
 mbeten në fuqi. Dokumentet nuk lëvizen pa konfirmim. Aplikacioni sugjeron vendosjen
 pas ruajtjes; ndërhyrja para Save në Word/Excel nuk është implementuar ende.
 
-Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.5
+Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.6
 me të njëjtën llogari Windows. Folderët dhe serveri ruhen. Lista standarde e
 vjetër e formateve kalon automatikisht në të gjitha llojet; filtrat e personalizuar
 ruhen dhe mund të ndryshohen te Automatic guidance. Për test shkarkoni një file
@@ -36,7 +36,7 @@ konfirmuar. **Cancel** e lë dokumentin aty ku është. Butoni **Downloads** shf
 vetëm në pyetjen e parë dhe e lë skedarin në dosjen lokale ku është ruajtur.
 
 Brenda zgjedhjes **Downloads** shfaqet paralajmërimi: **Kujdes: Vetëm për dokumente
-provë dhe kopje jo thelbësore. Dokumentet e rëndësishme të punës ruajini në Files PX.**
+provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të punës ruajini në Files PX.**
 
 Zgjedhja **Downloads** mbahet mend për ruajtjet e tjera të
 të njëjtit skedar, edhe pas rinisjes. **Save** vazhdon ta ruajë dokumentin aty ku
