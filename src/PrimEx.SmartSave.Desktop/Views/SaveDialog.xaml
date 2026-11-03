@@ -16,7 +16,12 @@
       <Button Content="Browse _server folders…" Click="BrowseServer" HorizontalAlignment="Left" IsEnabled="{Binding CompanySelected}"/>
     </StackPanel></Border>
     <Border Style="{StaticResource Card}"><StackPanel>
-      <RadioButton Content="_Downloads" IsChecked="{Binding OutsideSelected}" GroupName="Destination" FontWeight="SemiBold"/>
+      <RadioButton IsChecked="{Binding OutsideSelected}" GroupName="Destination" HorizontalContentAlignment="Stretch" AutomationProperties.Name="Downloads" AutomationProperties.HelpText="{Binding Text, ElementName=DownloadsWarning}">
+        <StackPanel>
+          <AccessText Text="_Downloads" FontWeight="SemiBold"/>
+          <TextBlock x:Name="DownloadsWarning" Text="Kujdes: Vetëm për dokumente provë dhe kopje jo thelbësore. Dokumentet e rëndësishme të punës ruajini në Files PX." TextWrapping="Wrap" FontSize="12" Foreground="#7A4200" Background="#FFF8E6" Padding="8" Margin="0,6,0,0"/>
+        </StackPanel>
+      </RadioButton>
       <TextBlock Text="Choose Downloads or another local or external folder" TextWrapping="Wrap" Foreground="#617586" Margin="24,8,0,4"/>
       <Button Content="_Browse destination…" Click="BrowseOutside" HorizontalAlignment="Left" IsEnabled="{Binding OutsideSelected}"/>
     </StackPanel></Border>

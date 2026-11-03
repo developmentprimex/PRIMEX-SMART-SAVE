@@ -17,7 +17,7 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.4, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.5, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -190,6 +190,23 @@ installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
 installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
+
+Downloads advisory follow-up (0.2.5): added the Albanian warning inside the
+Downloads button and local destination choice, with wrapping amber text/background
+and accessible help text. Important work documents are directed toward Files PX;
+local saving remains available and no transfer/permission behavior changes. Both
+WPF placement screens were rendered and visually inspected with the warning fully
+visible. During verification the live-agent test encountered a log-reader/writer
+sharing race. Its polling reader now permits concurrent append/rotation and keeps
+the original bounded event assertions. This only changes test reading behavior.
+
+The rerun passed all 26 desktop checks. Installer checks passed 10/10, including
+all 479 embedded file hashes; the reconstructed-image runtime checks passed 6/6
+(42 relevant checks). Core/browser behavior was unchanged and was not rerun.
+0.2.5 MSI: `artifacts/staff-installer-0.2.5/PrimEx.SmartSave-0.2.5-win-x64.msi`
+(58,180,136 bytes), SHA-256
+`7953a41243887d2ab0a8a13cfcd22ce0ddad6871b8b6f8ee2329c8ffb852af8f`.
+The package remains unsigned; real MSI upgrade/sign-in acceptance remains manual.
 
 Button naming follow-up (0.2.4): renamed the placement choices to Files PX and
 Downloads across the post-save prompt, destination choices and relevant browsing

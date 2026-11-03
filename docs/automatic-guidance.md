@@ -4,6 +4,11 @@ In 0.2.4 the two choices are named **Files PX** (company server) and **Downloads
 (keep the current local folder). Downloads is the local-choice label: a document
 already on Desktop/Documents stays there rather than being moved to Downloads.
 
+Version 0.2.5 displays an Albanian advisory inside Downloads: **Kujdes: Vetëm për
+dokumente provë dhe kopje jo thelbësore. Dokumentet e rëndësishme të punës ruajini
+në Files PX.** It is visible in both placement screens and available as accessible
+help text. The local option remains available and keeps its existing behavior.
+
 Open the updated desktop app and click **Automatic guidance…**. Select **Enable
 automatic guidance on this PC**, check Downloads and any other local folders you
 want to watch, optionally include subfolders, and browse for your authorized

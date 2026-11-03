@@ -125,9 +125,18 @@ internal static class Program
                 try
                 {
                     string logs = Path.Combine(data, "logs", "events.jsonl"), journal = Path.Combine(data, "operations");
-                    for (int i = 0; i < 100 && !(File.Exists(logs) && File.ReadAllText(logs).Contains("MonitoringStarted")); i++)
+                    string ReadLiveLog()
+                    {
+                        try
+                        {
+                            using var stream = new FileStream(logs, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                            using var reader = new StreamReader(stream); return reader.ReadToEnd();
+                        }
+                        catch (IOException) { return ""; } // Startup/rotation can briefly replace the log.
+                    }
+                    for (int i = 0; i < 100 && !ReadLiveLog().Contains("MonitoringStarted"); i++)
                     { Assert(!process.HasExited); await Task.Delay(100); }
-                    Assert(File.Exists(logs) && File.ReadAllText(logs).Contains("MonitoringStarted"));
+                    Assert(ReadLiveLog().Contains("MonitoringStarted"));
                     var duplicateStart = new ProcessStartInfo(start.FileName) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
                     duplicateStart.ArgumentList.Add("--data-dir"); duplicateStart.ArgumentList.Add(data);
                     using (var duplicate = Process.Start(duplicateStart)!)
@@ -135,8 +144,8 @@ internal static class Program
                         try { using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(8)); await duplicate.WaitForExitAsync(limit.Token); Assert(duplicate.ExitCode == 0); }
                         finally { if (!duplicate.HasExited) { duplicate.Kill(); await duplicate.WaitForExitAsync(); } }
                     }
-                    for (int i = 0; i < 30 && !File.ReadAllText(logs).Contains("ApplicationActivated"); i++) await Task.Delay(100);
-                    Assert(!process.HasExited && File.ReadAllText(logs).Contains("ApplicationActivated"));
+                    for (int i = 0; i < 30 && !ReadLiveLog().Contains("ApplicationActivated"); i++) await Task.Delay(100);
+                    Assert(!process.HasExited && ReadLiveLog().Contains("ApplicationActivated"));
                     string partial = Path.Combine(nested, "download.xlsx.crdownload"), final = Path.Combine(nested, "download.xlsx");
                     File.WriteAllText(partial, "synthetic download completion test"); await Task.Delay(1400);
                     Assert(Directory.GetFiles(journal, "*.json").Length == 0);
