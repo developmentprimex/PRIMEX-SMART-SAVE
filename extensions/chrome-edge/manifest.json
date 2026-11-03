@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "PrimEx Smart Save",
+  "version": "0.1.0",
+  "description": "Download a link with PrimEx Smart Save using an explicit context-menu command.",
+  "permissions": ["downloads", "nativeMessaging", "storage", "contextMenus", "alarms"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "PrimEx Smart Save — pending downloads", "default_popup": "popup.html" }
+}

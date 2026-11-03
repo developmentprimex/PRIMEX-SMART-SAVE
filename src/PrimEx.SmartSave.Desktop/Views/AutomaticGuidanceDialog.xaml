@@ -1,0 +1,23 @@
+<Window x:Class="PrimEx.SmartSave.Desktop.Views.AutomaticGuidanceDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Automatic guidance — PrimEx Smart Save" Style="{StaticResource {x:Type Window}}" Width="740" Height="820" MinWidth="560" MinHeight="540" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="24">
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0"><TextBlock Text="{Binding Error}" Foreground="#B42318" TextWrapping="Wrap" AutomationProperties.LiveSetting="Assertive"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Cancel" IsCancel="True"/><Button x:Name="ApplyButton" Content="_Apply automatic guidance" Click="Apply" IsDefault="True" Style="{StaticResource PrimaryButton}"/></StackPanel></StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="OptionsPanel">
+      <TextBlock Text="Automatic document guidance" FontSize="25" FontWeight="SemiBold" Foreground="{StaticResource Brand}"/>
+      <TextBlock Text="Download or save a document into a selected folder. Once the file is ready, Smart Save asks whether to move it to the company server or keep it there." TextWrapping="Wrap" Margin="0,12"/>
+      <TextBlock Text="Works with completed files from Teams, browsers, Excel, PDF apps and other applications that save into these folders. Open or locked files wait until the application releases them. This is a prompt after saving." TextWrapping="Wrap" Foreground="#617586" Margin="0,0,0,14"/>
+      <CheckBox x:Name="EnableBox" Content="_Enable automatic guidance on this PC (pilot)" IsChecked="{Binding Enabled}" FontWeight="SemiBold" Margin="0,6,0,12"/>
+      <Border Style="{StaticResource Card}"><StackPanel>
+        <TextBlock Text="Watch these local folders" FontWeight="SemiBold"/>
+        <ItemsControl ItemsSource="{Binding Folders}"><ItemsControl.ItemTemplate><DataTemplate><StackPanel Margin="0,10,0,0"><CheckBox Content="{Binding Label}" IsChecked="{Binding Selected}"/><TextBlock Text="{Binding Path}" Foreground="#617586" TextWrapping="Wrap" Margin="22,3,0,0"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        <Button Content="_Add another local folder…" Click="AddFolder" HorizontalAlignment="Left" Margin="0,10,0,4"/>
+        <CheckBox Content="Include _subfolders of the selected folders" IsChecked="{Binding IncludeSubdirectories}" Margin="0,8,0,0"/>
+      </StackPanel></Border>
+      <Label Content="Company server roots — one per line" Target="{Binding ElementName=RootsBox}"/>
+      <TextBox x:Name="RootsBox" Text="{Binding ApprovedRoots, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="70" MaxHeight="130" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Company server roots"/>
+      <Button Content="Browse company _root…" Click="BrowseRoot" HorizontalAlignment="Left"/>
+      <TextBlock Text="Choose your authorized company folder, or leave roots empty to test Keep Current Location. Save Outside Server remains available. Existing files are not scanned or moved automatically." Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
+      <Label Content="Document file types" Target="{Binding ElementName=TypesBox}"/><TextBox x:Name="TypesBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Document file types"/>
+      <TextBlock Text="Only the selected folders are watched while the agent runs. Temporary files and application caches are excluded. No browser extension is required for this folder-based mode. Background document changes can also be detected; repeat prompts are limited." FontSize="12" Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
+    </StackPanel></ScrollViewer>
+  </DockPanel>
+</Window>

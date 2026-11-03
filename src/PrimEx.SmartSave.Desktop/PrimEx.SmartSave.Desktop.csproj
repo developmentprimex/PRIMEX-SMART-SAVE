@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>disable</ImplicitUsings><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../PrimEx.SmartSave.FileManager/PrimEx.SmartSave.FileManager.csproj" /><ProjectReference Include="../PrimEx.SmartSave.Monitoring/PrimEx.SmartSave.Monitoring.csproj" /><PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" /></ItemGroup>
+  <ItemGroup><Content Include="../../config/appsettings.example.json" Link="appsettings.example.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+</Project>

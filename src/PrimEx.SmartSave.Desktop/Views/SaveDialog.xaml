@@ -1,0 +1,28 @@
+<Window x:Class="PrimEx.SmartSave.Desktop.Views.SaveDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="PrimEx Smart Save" Style="{StaticResource {x:Type Window}}" Width="680" Height="840" MinWidth="530" MinHeight="560" WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="28">
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+      <TextBlock Text="{Binding Error}" Foreground="#B42318" TextWrapping="Wrap" AutomationProperties.LiveSetting="Assertive" Margin="0,4,0,10"/>
+      <TextBlock Text="Files are transferred after confirmation. Your source is retained if a transfer fails." FontSize="12" Foreground="#617586" TextWrapping="Wrap"/>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0"><Button Content="Cancel" IsCancel="True"/><Button x:Name="ConfirmButton" Content="_Confirm destination" IsDefault="True" Style="{StaticResource PrimaryButton}" Click="Confirm"/></StackPanel>
+    </StackPanel>
+  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="ChoicePanel">
+    <TextBlock Text="PrimEx Smart Save" Foreground="{StaticResource Brand}" FontSize="27" FontWeight="SemiBold"/>
+    <TextBlock Text="Document Storage Manager" Foreground="#617586" Margin="0,4,0,22"/>
+    <TextBlock Text="Where would you like to save this file?" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    <TextBlock Text="Company policy recommends saving work-related documents on the company server." TextWrapping="Wrap" Margin="0,10,0,12"/>
+    <Border Style="{StaticResource Card}"><StackPanel>
+      <RadioButton x:Name="CompanyOption" Content="▣  _Company Server — Recommended" IsChecked="{Binding CompanySelected}" GroupName="Destination" FontWeight="SemiBold" AutomationProperties.Name="Company Server Recommended"/>
+      <TextBlock Text="Browse an accessible folder in your configured company roots." TextWrapping="Wrap" Foreground="#617586" Margin="24,8,0,4"/>
+      <Button Content="Browse _server folders…" Click="BrowseServer" HorizontalAlignment="Left" IsEnabled="{Binding CompanySelected}"/>
+    </StackPanel></Border>
+    <Border Style="{StaticResource Card}"><StackPanel>
+      <RadioButton Content="Save _Outside Server" IsChecked="{Binding OutsideSelected}" GroupName="Destination" FontWeight="SemiBold"/>
+      <TextBlock Text="Local or external location" Foreground="#617586" Margin="24,8,0,4"/>
+      <Button Content="_Browse destination…" Click="BrowseOutside" HorizontalAlignment="Left" IsEnabled="{Binding OutsideSelected}"/>
+    </StackPanel></Border>
+    <Label Content="Selected _folder" Target="{Binding ElementName=FolderBox}"/>
+    <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Destination folder"/>
+    <Label Content="File _name" Target="{Binding ElementName=NameBox}"/>
+    <TextBox x:Name="NameBox" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File name"/>
+  </StackPanel></ScrollViewer></DockPanel>
+</Window>

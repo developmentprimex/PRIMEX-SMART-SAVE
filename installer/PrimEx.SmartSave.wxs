@@ -1,0 +1,23 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="PrimEx Smart Save" Manufacturer="PrimEx" Version="0.1.0" UpgradeCode="74FC93D4-971F-4D60-8FA7-226C2AB7E5AE" Scope="perUser">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of PrimEx Smart Save is already installed."/>
+    <MediaTemplate EmbedCab="yes"/>
+    <StandardDirectory Id="LocalAppDataFolder"><Directory Id="PrimExFolder" Name="PrimEx"><Directory Id="INSTALLFOLDER" Name="SmartSaveApp"><Directory Id="DesktopDir" Name="Desktop"/><Directory Id="NativeHostDir" Name="NativeHost"/></Directory></Directory></StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder"/>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="UserIntegration" Guid="B8773B57-53A4-4436-B619-12FA53CE5F21">
+        <File Id="NativeManifest" Source="$(var.PayloadRoot)\native-host.json"/>
+        <RegistryValue Root="HKCU" Key="Software\PrimEx\SmartSave" Name="InstallFolder" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes"/>
+        <RegistryValue Root="HKCU" Key="Software\Google\Chrome\NativeMessagingHosts\com.primex.smartsave" Value="[INSTALLFOLDER]native-host.json" Type="string"/>
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\Edge\NativeMessagingHosts\com.primex.smartsave" Value="[INSTALLFOLDER]native-host.json" Type="string"/>
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="PrimEx Smart Save" Value="&quot;[INSTALLFOLDER]Desktop\PrimEx.SmartSave.Desktop.exe&quot; --startup --background" Type="string"/>
+        <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="PrimEx Smart Save" Target="[INSTALLFOLDER]Desktop\PrimEx.SmartSave.Desktop.exe" WorkingDirectory="DesktopDir"/>
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall"/>
+        <RemoveFolder Id="RemovePrimExFolder" Directory="PrimExFolder" On="uninstall"/>
+      </Component>
+    </DirectoryRef>
+    <Feature Id="Main" Title="PrimEx Smart Save" Level="1"><ComponentGroupRef Id="DesktopFiles"/><ComponentGroupRef Id="NativeHostFiles"/><ComponentRef Id="UserIntegration"/></Feature>
+  </Package>
+  <Fragment><ComponentGroup Id="DesktopFiles" Directory="DesktopDir"><Files Include="$(var.PayloadRoot)\Desktop\**"/></ComponentGroup></Fragment>
+  <Fragment><ComponentGroup Id="NativeHostFiles" Directory="NativeHostDir"><Files Include="$(var.PayloadRoot)\NativeHost\**"/></ComponentGroup></Fragment>
+</Wix>
