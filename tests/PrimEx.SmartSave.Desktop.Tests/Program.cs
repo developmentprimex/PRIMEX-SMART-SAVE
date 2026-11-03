@@ -181,6 +181,13 @@ internal static class Program
                         if (!promptSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt)
                         {
                             promptSeen = true;
+                            if (scenario == "Keep")
+                            {
+                                prompt.UpdateLayout();
+                                string preview = Path.GetFullPath("artifacts/verification/post-save.png"); Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
+                                var bitmap = new RenderTargetBitmap((int)prompt.ActualWidth, (int)prompt.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(prompt);
+                                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var output = File.Create(preview); encoder.Save(output);
+                            }
                             if (scenario == "Close") prompt.Close();
                             else if (scenario == "Escape") System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt);
                             else if (scenario == "Keep") ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

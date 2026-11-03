@@ -18,7 +18,7 @@ public partial class SaveDialog : Window
     }
     private void BrowseOutside(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "Save Outside Server — select a destination folder", Multiselect = false };
+        var dialog = new OpenFolderDialog { Title = "Downloads — select a local or external folder", Multiselect = false };
         if (dialog.ShowDialog(this) == true) model.Folder = dialog.FolderName;
     }
     private async void BrowseServer(object sender, RoutedEventArgs e)

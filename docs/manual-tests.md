@@ -64,7 +64,7 @@ silently enabling unsupported coverage.
 Leave disabled until pilot approval. Enable only one disposable local folder.
 Create/modify eligible files, rename into it, create temp/Office lock files, leave
 a file locked, generate duplicate events and exercise a watcher overflow. Verify
-one suggestion per path within 30 minutes; Keep Current Location leaves the file
+one suggestion per path within 30 minutes; Downloads leaves the file
 in place; moving requires confirmation and selection. Verify recovery from agent
 restart does not automatically move files. Existing files are not scanned at startup.
 
@@ -81,19 +81,19 @@ deployment before broader assignment. No policy changes were made in development
 
 Use disposable local test roots first. Enable monitoring for a separate temporary
 download folder, configure two approved test company roots, then save a new sample.
-Choose Move to Company Server. Confirm Windows Shell breadcrumb navigation,
+Choose Files PX. Confirm Windows Shell breadcrumb navigation,
 search, This PC, New folder and company-root shortcuts work. Select a child folder,
 click Select Folder, review the filename, then click Move here. Verify exact bytes
 at the destination and source removal only after success. Repeat with a filename
 conflict, Cancel in the shell picker, Cancel in final confirmation, and a selection
-outside approved roots (must be rejected). Confirm Keep Current Location appears
+outside approved roots (must be rejected). Confirm Downloads appears
 only in the initial prompt. Test Alt/Tab/Escape, screen reader labels and DPI.
 Only afterward use an IT-approved disposable SMB test directory to check mapped
 drive/UNC equivalence and server outage. Never use existing company documents.
 
 ## Repeated saves (0.2.3)
 
-In an isolated watched test folder, create a new TXT, choose Keep Current Location,
+In an isolated watched test folder, create a new TXT, choose Downloads,
 then edit and Save it twice. Expect no further Smart Save prompt. Exit/reopen the
 agent and edit/Save again; still no prompt. Save As under a new name and expect a
 new post-save prompt. Repeat with Word, Excel and PDF editors, including atomic

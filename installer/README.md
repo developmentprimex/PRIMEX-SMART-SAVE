@@ -1,10 +1,15 @@
-# Staff MSI 0.2.3 — per-user pilot
+# Staff MSI 0.2.4 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.3/PrimEx.SmartSave-0.2.3-win-x64.msi`.
+`artifacts/staff-installer-0.2.4/PrimEx.SmartSave-0.2.4-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+0.2.4 names the two choices **Files PX** (company server) and **Downloads**
+(keep the current local folder). The existing location/permission/conflict and
+remembered-choice behavior is unchanged. Downloads is a label for the local
+choice, not a command to move a Desktop/Documents file into the Downloads folder.
 
 The MSI installs for the signed-in user under
 `%LOCALAPPDATA%\PrimEx\SmartSaveApp\Desktop`, creates Desktop and Start-menu
@@ -37,7 +42,7 @@ the matching WixToolset.UI.wixext extension. Keep build tools outside the instal
 payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.3
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.4
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -53,7 +58,7 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.3 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.4 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 

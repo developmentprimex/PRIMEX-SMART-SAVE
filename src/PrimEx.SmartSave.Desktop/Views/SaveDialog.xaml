@@ -11,13 +11,13 @@
     <TextBlock Text="Where would you like to save this file?" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/>
     <TextBlock Text="Company policy recommends saving work-related documents on the company server." TextWrapping="Wrap" Margin="0,10,0,12"/>
     <Border Style="{StaticResource Card}"><StackPanel>
-      <RadioButton x:Name="CompanyOption" Content="▣  _Company Server — Recommended" IsChecked="{Binding CompanySelected}" GroupName="Destination" FontWeight="SemiBold" AutomationProperties.Name="Company Server Recommended"/>
+      <RadioButton x:Name="CompanyOption" Content="▣  Files P_X — Recommended" IsChecked="{Binding CompanySelected}" GroupName="Destination" FontWeight="SemiBold" AutomationProperties.Name="Files PX Recommended"/>
       <TextBlock Text="Browse an accessible folder in your configured company roots." TextWrapping="Wrap" Foreground="#617586" Margin="24,8,0,4"/>
       <Button Content="Browse _server folders…" Click="BrowseServer" HorizontalAlignment="Left" IsEnabled="{Binding CompanySelected}"/>
     </StackPanel></Border>
     <Border Style="{StaticResource Card}"><StackPanel>
-      <RadioButton Content="Save _Outside Server" IsChecked="{Binding OutsideSelected}" GroupName="Destination" FontWeight="SemiBold"/>
-      <TextBlock Text="Local or external location" Foreground="#617586" Margin="24,8,0,4"/>
+      <RadioButton Content="_Downloads" IsChecked="{Binding OutsideSelected}" GroupName="Destination" FontWeight="SemiBold"/>
+      <TextBlock Text="Choose Downloads or another local or external folder" TextWrapping="Wrap" Foreground="#617586" Margin="24,8,0,4"/>
       <Button Content="_Browse destination…" Click="BrowseOutside" HorizontalAlignment="Left" IsEnabled="{Binding OutsideSelected}"/>
     </StackPanel></Border>
     <Label Content="Selected _folder" Target="{Binding ElementName=FolderBox}"/>

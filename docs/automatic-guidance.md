@@ -1,5 +1,9 @@
 # Automatic guidance for everyday downloads and saves
 
+In 0.2.4 the two choices are named **Files PX** (company server) and **Downloads**
+(keep the current local folder). Downloads is the local-choice label: a document
+already on Desktop/Documents stays there rather than being moved to Downloads.
+
 Open the updated desktop app and click **Automatic guidance…**. Select **Enable
 automatic guidance on this PC**, check Downloads and any other local folders you
 want to watch, optionally include subfolders, and browse for your authorized
@@ -7,7 +11,7 @@ company root. Click **Apply automatic guidance**. Monitoring starts immediately;
 there is no JSON editing or agent restart for these settings. The home screen
 shows whether guidance is on and how many selected folders are active.
 
-You can leave company roots empty while testing **Keep Current Location**.
+You can leave company roots empty while testing **Downloads**.
 Company roots are needed to offer a usable company destination. The same settings
 screen can disable monitoring without moving or deleting anything. Folder choices
 are remembered. Opening/cancelling setup never enables monitoring or changes files.
@@ -20,13 +24,13 @@ After setup, continue using applications normally:
 
 | Action | Expected behavior |
 |---|---|
-| Download a PDF from Teams into selected Downloads | Once complete and unlocked, offer Move to Company Server / Keep Current Location |
+| Download a PDF from Teams into selected Downloads | Once complete and unlocked, offer Files PX / Downloads |
 | Normal Chrome/Edge download into a selected folder | Same post-save suggestion; no browser extension required for this folder-based mode |
 | Save an Excel/Word/PDF file in a selected folder | Suggest after the file becomes quiet and unlocked; an application retaining a lock can delay it until close |
 | Save in a selected subfolder | Covered only if Include subfolders is checked |
 | Save in another folder | Add that particular local folder to setup to cover it |
-| Keep Current Location | Leave the file untouched and persist this choice for later saves to the same path with the same creation timestamp, including after restart |
-| Move to Company Server | Opens the company-folder browser directly; select a folder and click Move here. It does not ask Company Server / Save Outside Server again |
+| Downloads | Leave the file untouched and persist this choice for later saves to the same path with the same creation timestamp, including after restart |
+| Files PX | Opens the company-folder browser directly; select a folder and click Move here. It does not repeat the Files PX / Downloads question |
 
 The company-folder step opens the native Windows Shell folder picker, with
 breadcrumb navigation, search, This PC, mapped drives and New folder. It starts
@@ -35,8 +39,8 @@ controls its appearance and view preferences; it is a folder picker rather than
 a full standalone Explorer window. You can navigate elsewhere, but confirming
 a destination outside the configured company roots is rejected. Click Select
 Folder, then review the filename and click Move here. Existing filenames still require Keep Both or explicitly
-confirmed Replace. The folder step has **Cancel** and **Move here**; **Keep Current
-Location** appears only in the initial post-save question. Cancel leaves the source
+confirmed Replace. The folder step has **Cancel** and **Move here**; **Downloads**
+appears only in the initial post-save question. Cancel leaves the source
 untouched. Manual Move a file and the explicit
 browser-extension workflow still offer both original destination choices.
 
@@ -75,9 +79,9 @@ folder such as your local Downloads. Real Teams/browser/application workflows,
 SMB transfer and pilot hardware still need manual acceptance testing.
 
 First test: enable Downloads, download a disposable PDF into that exact folder,
-wait for the post-save prompt, and choose **Keep Current Location**. To test a
+wait for the post-save prompt, and choose **Downloads**. To test a
 move, add an approved test company folder, download a different sample file,
-and choose **Move to Company Server**. Use a new filename to avoid the 30-minute
+and choose **Files PX**. Use a new filename to avoid the 30-minute
 repeat-prompt suppression. Closing the main window hides it to tray; use tray
 Exit to stop the agent. Leave automatic guidance off on other PCs until pilot
 validation is complete.

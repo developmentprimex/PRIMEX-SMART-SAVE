@@ -91,7 +91,7 @@ public partial class App : Application
     {
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("Open Smart Save", null, (_, _) => ShowMain());
-        menu.Items.Add("Open Company Server", null, async (_, _) => {
+        menu.Items.Add("Open Files PX", null, async (_, _) => {
             ShowMain();
             try
             {
@@ -104,7 +104,7 @@ public partial class App : Application
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Automatic guidance…", null, async (_, _) => await OpenAutomaticGuidanceAsync());
         menu.Items.Add("View Pending Operations", null, (_, _) => ShowMain());
-        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.3\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
+        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.4\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
         menu.Items.Add("Exit", null, (_, _) => {
             var queue = services!.GetRequiredService<QueueViewModel>();
             if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before exiting."; ShowMain(); return; }

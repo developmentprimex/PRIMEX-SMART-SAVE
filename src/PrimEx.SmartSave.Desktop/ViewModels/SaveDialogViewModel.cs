@@ -20,7 +20,7 @@ public sealed class SaveDialogViewModel(SaveRequest request, IServerFolderServic
         {
             PathRules.ValidateFileName(FileName);
             Folder = resolver.Resolve(Folder);
-            if (CompanySelected && !servers.IsApproved(Folder)) { Error = "Choose a folder inside an approved company root. Configure roots in Settings, or choose Save Outside Server."; return false; }
+            if (CompanySelected && !servers.IsApproved(Folder)) { Error = "Choose an approved Files PX folder. Configure roots in Settings, or choose Downloads for a local destination."; return false; }
             var status = await servers.CheckAsync(Folder, true).WaitAsync(TimeSpan.FromSeconds(12));
             Error = status.Error ?? "";
             return status.Available;

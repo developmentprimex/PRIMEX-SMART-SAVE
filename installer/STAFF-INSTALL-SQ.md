@@ -1,6 +1,6 @@
 # PrimEx Smart Save — instalimi për stafin
 
-1. Kopjo `PrimEx.SmartSave-0.2.3-win-x64.msi` në kompjuterin e punonjësit.
+1. Kopjo `PrimEx.SmartSave-0.2.4-win-x64.msi` në kompjuterin e punonjësit.
 2. Nëse është hapur versioni i vjetër, mbylle nga ikona pranë orës me **Exit**.
 3. Hape MSI-në me llogarinë normale të punonjësit dhe përfundo instalimin.
    .NET është i përfshirë; nuk duhet instaluar veçmas. Paketa është për Windows x64.
@@ -24,18 +24,18 @@ Konfigurimi bëhet një herë për secilën llogari. Lejet ekzistuese të server
 mbeten në fuqi. Dokumentet nuk lëvizen pa konfirmim. Aplikacioni sugjeron vendosjen
 pas ruajtjes; ndërhyrja para Save në Word/Excel nuk është implementuar ende.
 
-Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.3
+Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.4
 me të njëjtën llogari Windows. Folderët dhe serveri ruhen. Lista standarde e
 vjetër e formateve kalon automatikisht në të gjitha llojet; filtrat e personalizuar
 ruhen dhe mund të ndryshohen te Automatic guidance. Për test shkarkoni një file
 të ri, jo një file që ishte ruajtur para aktivizimit.
 
-Pas **Move to Company Server**, hapet dritarja standarde e Windows-it për dosjet.
+Pas **Files PX**, hapet dritarja standarde e Windows-it për dosjet.
 Gjeni dosjen në server, klikoni **Select Folder**, pastaj **Move here** për ta
-konfirmuar. **Cancel** e lë dokumentin aty ku është. Butoni **Keep Current
-Location** shfaqet vetëm në pyetjen e parë.
+konfirmuar. **Cancel** e lë dokumentin aty ku është. Butoni **Downloads** shfaqet
+vetëm në pyetjen e parë dhe e lë skedarin në dosjen lokale ku është ruajtur.
 
-Në 0.2.3, zgjedhja **Keep Current Location** mbahet mend për ruajtjet e tjera të
+Zgjedhja **Downloads** mbahet mend për ruajtjet e tjera të
 të njëjtit skedar, edhe pas rinisjes. **Save** vazhdon ta ruajë dokumentin aty ku
 është hapur. **Save As** me emër ose dosje tjetër trajtohet si skedar i ri.
 Ndryshimet në kopje lokale nuk dërgohen automatikisht te kopja në server.

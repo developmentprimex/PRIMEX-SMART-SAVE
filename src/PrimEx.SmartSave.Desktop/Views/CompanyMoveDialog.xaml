@@ -1,8 +1,8 @@
-<Window x:Class="PrimEx.SmartSave.Desktop.Views.CompanyMoveDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Move to Company Server" Style="{StaticResource {x:Type Window}}" Width="650" Height="450" MinWidth="500" MinHeight="380" WindowStartupLocation="CenterOwner">
+<Window x:Class="PrimEx.SmartSave.Desktop.Views.CompanyMoveDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Files PX" Style="{StaticResource {x:Type Window}}" Width="650" Height="450" MinWidth="500" MinHeight="380" WindowStartupLocation="CenterOwner">
   <DockPanel Margin="24">
     <StackPanel DockPanel.Dock="Bottom"><TextBlock x:Name="Error" TextWrapping="Wrap" Foreground="#B42318" Margin="0,8" AutomationProperties.LiveSetting="Assertive"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button x:Name="CancelButton" Content="Cancel" IsCancel="True"/><Button x:Name="MoveButton" Content="_Move here" IsDefault="True" Click="ConfirmMove" Style="{StaticResource PrimaryButton}" IsEnabled="False"/></StackPanel></StackPanel>
     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="DetailsPanel">
-      <TextBlock Text="Move to Company Server" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource Brand}"/>
+      <TextBlock Text="Files PX" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource Brand}"/>
       <TextBlock Text="Select the folder using the familiar Windows folder browser, then confirm the move." TextWrapping="Wrap" Margin="0,10,0,12"/>
       <Label Content="Selected company _folder" Target="{Binding ElementName=FolderBox}"/><TextBox x:Name="FolderBox" IsReadOnly="True" TextWrapping="Wrap" AutomationProperties.Name="Selected company folder"/>
       <Button x:Name="ChooseFolderButton" Content="_Choose another folder…" Click="ChooseAnotherFolder" HorizontalAlignment="Left"/>

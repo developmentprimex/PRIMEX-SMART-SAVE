@@ -19,7 +19,7 @@ public sealed class WindowsCompanyFolderPicker(IServerFolderService servers, IPa
         if (approved.Length == 0) throw new InvalidDataException("No approved company roots are configured. Add your company root in Automatic guidance first.");
         var dialog = new OpenFolderDialog
         {
-            Title = "Move to Company Server - choose a destination folder",
+            Title = "Files PX - choose a destination folder",
             Multiselect = false, AddToRecent = false,
             ClientGuid = new Guid("D16F6F02-F21C-43EE-948A-DF0E68E87B55"),
             InitialDirectory = initialFolder ?? approved[0].Path,

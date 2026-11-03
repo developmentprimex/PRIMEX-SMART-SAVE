@@ -17,7 +17,7 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.3, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.4, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
 | Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
@@ -190,6 +190,24 @@ installer 10 and staff runtime 6 checks passed (109 total). Signing and real MSI
 installation/upgrade/uninstall/sign-in remain subject to the limits above.
 
 ## Next release steps
+
+Button naming follow-up (0.2.4): renamed the placement choices to Files PX and
+Downloads across the post-save prompt, destination choices and relevant browsing
+titles. Files PX retains the company-server action; Downloads retains the current
+local folder. Supporting text and tooltips explicitly explain that a Desktop or
+Documents file stays there. The company choice remains recommended. Save/transfer
+and remembered-location behavior are unchanged. The post-save dialog was rendered
+to `artifacts/verification/post-save.png` and visually inspected; all 26 desktop
+checks passed. Core/browser behavior was unchanged and was not rerun for this
+wording-only release.
+
+0.2.4 MSI: `artifacts/staff-installer-0.2.4/PrimEx.SmartSave-0.2.4-win-x64.msi`
+(58,155,560 bytes), SHA-256
+`e64d5ca59c89791987be28d42c170bf7fad3744be812c428b0094fb81fb5f4cb`.
+All 479 embedded files were extracted and hash-verified. The 10 installer checks
+and six reconstructed-image runtime checks passed, alongside 26 desktop checks
+(42 repeated checks). The package remains unsigned and actual MSI upgrade/sign-in
+acceptance remains a manual gate.
 
 Repeated-save follow-up (0.2.3): explicit Keep Current Location choices persist
 using a hashed normalized path plus creation timestamp. Content edits no longer

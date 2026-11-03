@@ -1,7 +1,7 @@
 # PrimEx Smart Save
 
 A working Windows .NET 10/WPF pilot candidate for guided document placement.
-Company Server is recommended by default; Save Outside Server remains available.
+Files PX (company server) is recommended by default; Downloads (local saving) remains available.
 There is no global Save interceptor and no cloud service or database.
 
 **Status:** core, desktop agent, native messaging, explicit browser-link downloads,
@@ -10,7 +10,7 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.3/PrimEx.SmartSave-0.2.3-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.4/PrimEx.SmartSave-0.2.4-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
@@ -36,7 +36,8 @@ This immediately enables post-save suggestions for completed, unlocked eligible
 files in those folders. See [automatic guidance](docs/automatic-guidance.md).
 
 For a manual test, click **Move a file**, choose a closed test file,
-then select an approved company folder or **Save Outside Server**. Both actions
+then select an approved company folder under **Files PX**, or choose **Downloads**
+for a local/external destination. Both actions
 perform an actual verified move, with source retention if deletion cannot be
 completed safely. Existing files require Keep Both or explicit Replace confirmation.
 
