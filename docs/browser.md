@@ -39,9 +39,13 @@ page Save As. Incognito downloads are excluded.
 If readiness times out or native messaging fails before staging, normal browser
 filename selection continues. If the agent disappears after staging, the file
 remains in the visible staging folder; the extension retries delivery later.
-Cancelling the destination dialog cancels the placement operation and retains
-the completed staging file. It does not undo the already completed download.
-Use the desktop's Retry after review action to reconsider a cancelled placement.
+Since 0.2.15, the destination dialog requires an explicit local/server choice.
+Close/Escape/Alt+F4 cannot dismiss it; cancelling folder browsing returns to the
+destination screen. The local option initially names the configured Downloads
+folder, not an internal staging job, and updates when another local folder is
+selected. No transfer occurs before confirmation. Interrupted decisions remain
+Pending with the completed staging file retained; they do not undo the download.
+Previously cancelled operations remain available through Retry after review.
 
 The API does not provide a reliable universal manual-download intent flag. This
 candidate deliberately requires its explicit command. It does not claim coverage

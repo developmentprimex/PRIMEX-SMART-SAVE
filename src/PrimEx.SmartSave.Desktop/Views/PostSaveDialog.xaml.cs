@@ -1,11 +1,28 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Automation;
+using PrimEx.SmartSave.Desktop.Components;
+using PrimEx.SmartSave.Desktop.ViewModels;
 namespace PrimEx.SmartSave.Desktop.Views;
 public partial class PostSaveDialog : Window
 {
     public bool KeepChosen { get; private set; }
-    public PostSaveDialog(string name) { InitializeComponent(); FileLabel.Text = name; }
-    private void Move(object sender, RoutedEventArgs e) => DialogResult = true;
+    private bool companyChosen;
+    public PostSaveDialog(string name, string? sourcePath = null)
+    {
+        InitializeComponent(); FileLabel.Text = name;
+        string folder = sourcePath == null ? Environment.CurrentDirectory : Path.GetDirectoryName(sourcePath)!;
+        string label = LocalFolderDisplay.Name(folder);
+        Title = label + " or Files PX";
+        LocalLocation.Text = folder;
+        KeepLabel.Text = "_" + LocalFolderDisplay.AccessText(label);
+        ConfirmationLabel.Text = "_Vazhdo me " + LocalFolderDisplay.AccessText(label);
+        KeepButton.ToolTip = folder;
+        AutomationProperties.SetName(KeepButton, label);
+        AutomationProperties.SetName(ConfirmDownloadsButton, "Vazhdo me " + label);
+        RequiredDestinationChoice.Attach(this, () => companyChosen || KeepChosen);
+    }
+    private void Move(object sender, RoutedEventArgs e) { companyChosen = true; DialogResult = true; }
     private void Keep(object sender, RoutedEventArgs e)
     {
         WarningPanel.Visibility = Visibility.Visible;
@@ -27,6 +44,5 @@ public partial class PostSaveDialog : Window
     {
         e.Handled = true;
         if (WarningPanel.Visibility == Visibility.Visible) Back(sender, e);
-        else DialogResult = false;
     }
 }

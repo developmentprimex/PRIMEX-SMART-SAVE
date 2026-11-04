@@ -26,23 +26,35 @@ public sealed class WpfDestinationSelector(IServerFolderService servers, IPathRe
             // appeared after the watcher event, or this request predates the upgrade.
             if (options != null && new EligibleFilePolicy(options, editorWorkspaces).IsSuppressed(request.SourcePath)) return Task.FromResult<DestinationSelection?>(null);
             if (locations?.Contains(request.SourcePath) == true) return Task.FromResult<DestinationSelection?>(null);
-            var prompt = Prepare(new PostSaveDialog(request.DisplayName));
-            if (prompt.ShowDialog() != true)
+            while (true)
             {
-                if (prompt.KeepChosen && locations != null && !locations.Remember(request.SourcePath))
+                cancellationToken.ThrowIfCancellationRequested();
+                var prompt = Prepare(new PostSaveDialog(request.DisplayName, request.SourcePath));
+                if (prompt.ShowDialog() != true)
                 {
-                    const string message = "The document stays here, but this choice could not be remembered. You may be asked again after another save.";
-                    if (VisibleOwner is { } owner) MessageBox.Show(owner, message, "PrimEx Smart Save", MessageBoxButton.OK, MessageBoxImage.Information);
-                    else MessageBox.Show(message, "PrimEx Smart Save", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (!prompt.KeepChosen) throw new OperationCanceledException("Destination choice was interrupted.");
+                    RememberKeep(request.SourcePath);
+                    return Task.FromResult<DestinationSelection?>(null);
                 }
-                return Task.FromResult<DestinationSelection?>(null);
+                var browser = Prepare(new CompanyMoveDialog(request, servers, picker, initialMode, returnToChoices: true));
+                browser.ShowDialog();
+                if (browser.Selection != null) return Task.FromResult<DestinationSelection?>(browser.Selection);
+                if (Application.Current.Dispatcher.HasShutdownStarted || Application.Current is App { IsExiting: true }) throw new OperationCanceledException("Destination choice was interrupted.");
+                // Back/cancelling the native picker is navigation, not a local-save choice.
             }
-            // The user has already chosen Company Server. Ask only for the folder,
-            // filename and any explicit conflict decision, without repeating the choice.
-            var browser = Prepare(new CompanyMoveDialog(request, servers, picker, initialMode));
-            browser.ShowDialog(); return Task.FromResult(browser.Selection);
         }
-        var dialog = Prepare(new SaveDialog(request, servers, resolver, initialMode));
-        dialog.ShowDialog(); return Task.FromResult(dialog.Selection);
+        string? localFolder = request.Integration == "Browser" && options?.Browser.DownloadsFolder is { Length: > 0 } downloads ? downloads : null;
+        var dialog = Prepare(new SaveDialog(request, servers, resolver, initialMode, localFolder));
+        dialog.ShowDialog();
+        if (!dialog.KeepChosen && dialog.Selection == null) throw new OperationCanceledException("Destination choice was interrupted.");
+        if (dialog.KeepChosen) RememberKeep(request.SourcePath);
+        return Task.FromResult(dialog.Selection);
+    }
+    private void RememberKeep(string path)
+    {
+        if (locations == null || locations.Remember(path)) return;
+        const string message = "The document stays here, but this choice could not be remembered. You may be asked again after another save.";
+        if (VisibleOwner is { } owner) MessageBox.Show(owner, message, "PrimEx Smart Save", MessageBoxButton.OK, MessageBoxImage.Information);
+        else MessageBox.Show(message, "PrimEx Smart Save", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

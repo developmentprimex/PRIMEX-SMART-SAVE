@@ -1,10 +1,18 @@
-# Staff MSI 0.2.14 — per-user pilot
+# Staff MSI 0.2.15 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.14/PrimEx.SmartSave-0.2.14-win-x64.msi`.
+`artifacts/staff-installer-0.2.15/PrimEx.SmartSave-0.2.15-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+0.2.15 removes dismissal without a destination choice. Placement windows hide
+the title-bar Close control and block Close/Escape/Alt+F4 until local keeping or
+a valid transfer destination is confirmed. Back/native-folder cancellation returns
+to the initial choices. The local option/confirmation name the actual folder
+and display its path. Explicit browser staging uses the configured Downloads
+folder as its initial local target. OS session shutdown remains possible; an
+interrupted decision remains Pending without inventing local consent.
 
 0.2.14 reduces the default post-save quiet period from 3 seconds to 1 second.
 The old shipped 3-second setting upgrades in memory on load. Other custom delays
@@ -92,7 +100,7 @@ payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
 dotnet restore extensions/visual-studio/PrimEx.SmartSave.VisualStudio.csproj
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.14
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.15
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -108,7 +116,7 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.14 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.15 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 

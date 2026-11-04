@@ -16,7 +16,7 @@ def main():
     parser.add_argument("--wix-ui", required=True, help="WiX 6 UI extension DLL")
     parser.add_argument("--offline-feed", type=Path)
     parser.add_argument("--runtime-version", default="10.0.8")
-    parser.add_argument("--version", default="0.2.14")
+    parser.add_argument("--version", default="0.2.15")
     parser.add_argument("--output", type=Path, default=ROOT / "artifacts" / "staff-release")
     parser.add_argument("--extension-id", action="append", default=[], help="Optional exact approved Chrome/Edge extension ID")
     args = parser.parse_args()

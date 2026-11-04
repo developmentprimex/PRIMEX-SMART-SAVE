@@ -2,6 +2,7 @@ using System.Windows;
 using Microsoft.Win32;
 using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
+using PrimEx.SmartSave.Core.Services;
 using PrimEx.SmartSave.Desktop.ViewModels;
 using PrimEx.SmartSave.Desktop.Components;
 namespace PrimEx.SmartSave.Desktop.Views;
@@ -11,14 +12,16 @@ public partial class SaveDialog : Window
     private readonly IServerFolderService servers;
     private readonly ICompanyFolderPicker companyPicker;
     public DestinationSelection? Selection { get; private set; }
-    public SaveDialog(SaveRequest request, IServerFolderService servers, IPathResolver resolver, TransferMode initialMode = TransferMode.Move)
+    public bool KeepChosen { get; private set; }
+    public SaveDialog(SaveRequest request, IServerFolderService servers, IPathResolver resolver, TransferMode initialMode = TransferMode.Move, string? initialLocalFolder = null)
     {
-        InitializeComponent(); this.servers = servers; companyPicker = new WindowsCompanyFolderPicker(servers, resolver); model = new(request, servers, resolver, initialMode); DataContext = model;
+        InitializeComponent(); this.servers = servers; companyPicker = new WindowsCompanyFolderPicker(servers, resolver); model = new(request, servers, resolver, initialMode, initialLocalFolder); DataContext = model;
+        RequiredDestinationChoice.Attach(this, () => Selection != null || KeepChosen);
         Loaded += (_, _) => CompanyOption.Focus();
     }
     private void BrowseOutside(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "Downloads — select a local or external folder", Multiselect = false };
+        var dialog = new OpenFolderDialog { Title = "Select a local or external folder", InitialDirectory = model.LocalFolder, Multiselect = false };
         if (dialog.ShowDialog(this) == true) model.Folder = dialog.FolderName;
     }
     private async void BrowseServer(object sender, RoutedEventArgs e)
@@ -39,6 +42,16 @@ public partial class SaveDialog : Window
         ChoicePanel.IsEnabled = false;
         try
         {
+            if (model.OutsideSelected)
+            {
+                try
+                {
+                    PathRules.ValidateFileName(model.FileName);
+                    if (string.Equals(PathRules.NormalizeAbsolute(Path.Combine(model.Folder, model.FileName)), PathRules.NormalizeAbsolute(model.Source), StringComparison.OrdinalIgnoreCase))
+                    { KeepChosen = true; Close(); return; }
+                }
+                catch (ArgumentException) { model.Error = "Enter a valid destination folder and filename."; return; }
+            }
             if (!await model.ValidateAsync() || !IsVisible) return;
             // Capture the validated values before any further interaction.
             string folder = model.Folder, name = model.FileName;
@@ -55,7 +68,7 @@ public partial class SaveDialog : Window
                 if (choice.ShowDialog() != true) return;
                 conflict = choice.Choice;
             }
-            Selection = new(folder, name, kind, conflict, mode); DialogResult = true;
+            Selection = new(folder, name, kind, conflict, mode); Close();
         }
         finally { ConfirmButton.IsEnabled = true; ChoicePanel.IsEnabled = true; }
     }

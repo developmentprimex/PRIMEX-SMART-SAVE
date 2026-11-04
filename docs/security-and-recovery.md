@@ -60,6 +60,15 @@ retains the source. Closing the main window hides to tray; tray Exit waits for
 the current operation to be finished/cancelled. Windows shutdown can still
 interrupt the process. Pending requests remain reviewable after restart.
 
+Since 0.2.15, placement windows require explicit local keeping or a valid
+transfer destination; Close/Escape/Alt+F4 do not count as consent. The title-bar
+Close control is hidden. Back/native-folder cancellation returns to the choice
+screen. Local labels identify the actual source/selected folder and the full
+path is shown. Keeping the unchanged path/name performs no transfer or overwrite.
+Session shutdown is allowed; an interrupted choice remains Pending without
+being marked as an explicit local choice. This is a desktop interaction rule,
+not protection against terminating the process. Local saving remains available.
+
 No automatic synchronization, orphan cleanup, completed-journal pruning or
 backup deletion is enabled. IT should define retention after pilot review.
 Journals and browser local storage necessarily contain local file paths and IDs;

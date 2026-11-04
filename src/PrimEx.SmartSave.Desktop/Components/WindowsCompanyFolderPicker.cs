@@ -46,7 +46,7 @@ public sealed class WindowsCompanyFolderPicker(IServerFolderService servers, IPa
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
             {
                 e.Cancel = true;
-                MessageBox.Show(owner, "Choose a folder inside the configured company server roots. To leave the document where it is, click Cancel.", "Choose a company folder", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(owner, "Choose a folder inside the configured company server roots. Cancel returns to the destination choices; choose the local folder to keep the document there.", "Choose a company folder", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         };
         return dialog.ShowDialog(owner) == true ? ResolveApprovedFolder(dialog.FolderName) : null;

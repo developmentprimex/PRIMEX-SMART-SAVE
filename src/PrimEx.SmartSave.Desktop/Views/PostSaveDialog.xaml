@@ -4,11 +4,12 @@
   <StackPanel Margin="20">
     <TextBlock Text="Where would you like to keep this file?" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"/>
     <TextBlock x:Name="FileLabel" TextWrapping="Wrap" Margin="0,8,0,6"/>
-    <TextBlock Text="Files PX: company folder. Downloads: current local folder." TextWrapping="Wrap" Foreground="#617586" FontSize="12"/>
+    <TextBlock Text="Choose Files PX or keep the file in its selected folder:" TextWrapping="Wrap" Foreground="#617586" FontSize="12"/>
+    <TextBlock x:Name="LocalLocation" TextWrapping="Wrap" Foreground="#617586" FontSize="12" Margin="0,4,0,0"/>
     <Grid Margin="0,12,0,0">
       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <Button x:Name="MoveButton" Grid.Column="0" Content="_Files PX" Click="Move" IsDefault="True" Margin="0" Style="{StaticResource PrimaryButton}" ToolTip="Move to a folder on the company server"/>
-      <Button x:Name="KeepButton" Grid.Column="2" Content="_Downloads" Click="Keep" Margin="0" ToolTip="Keep the file in its current local folder"/>
+      <Button x:Name="KeepButton" Grid.Column="2" Click="Keep" Margin="0"><AccessText x:Name="KeepLabel" TextWrapping="Wrap"/></Button>
     </Grid>
     <Border x:Name="WarningPanel" Visibility="Collapsed" Background="#FFF8E6" BorderBrush="#C58A1B" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
       <StackPanel>
@@ -17,7 +18,7 @@
         <Grid>
           <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
           <Button x:Name="BackButton" Content="_Kthehu" Click="Back" Margin="0,0,8,0"/>
-          <Button x:Name="ConfirmDownloadsButton" Grid.Column="1" Content="_Vazhdo me Downloads" Click="ConfirmKeep" Margin="0" HorizontalAlignment="Right" AutomationProperties.HelpText="{Binding Text, ElementName=DownloadsWarning}"/>
+          <Button x:Name="ConfirmDownloadsButton" Grid.Column="1" Click="ConfirmKeep" Margin="0" HorizontalAlignment="Right" AutomationProperties.HelpText="{Binding Text, ElementName=DownloadsWarning}"><AccessText x:Name="ConfirmationLabel" TextWrapping="Wrap"/></Button>
         </Grid>
       </StackPanel>
     </Border>

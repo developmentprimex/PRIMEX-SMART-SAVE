@@ -203,5 +203,10 @@ public partial class App : Application
         pendingFileCount = monitor?.PendingFileCount,
         activeWatcherCount = monitor?.ActiveFolderCount
     };
+    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    {
+        base.OnSessionEnding(e);
+        if (!e.Cancel) IsExiting = true;
+    }
     protected override void OnExit(ExitEventArgs e) { activation?.Dispose(); pipe?.Dispose(); if (monitor != null) monitor.DisposeAsync().AsTask().GetAwaiter().GetResult(); tray?.Dispose(); services?.Dispose(); instanceLock?.Dispose(); base.OnExit(e); }
 }

@@ -7,6 +7,19 @@ All manual gates below remain unexecuted unless explicitly listed in validation.
 
 ## Windows and local files
 
+For 0.2.15, verify the placement title/local button/path and advisory confirmation
+for Desktop, Downloads, a custom folder, duplicate folder names in different
+parents, underscores and long names. No title-bar X is available; window Close,
+Escape/Alt+F4, taskbar Close and owner hiding must not record a choice or remove
+the pending prompt. Escape may return from the local advisory. Back/cancelling
+the native company picker must return to the initial choices. Confirm local
+keeping explicitly and verify no copy/rename/self-conflict occurs. In manual/
+browser placement, browse a new local folder and verify its label follows it;
+explicit staged browser downloads must use the configured local target rather
+than the internal staging job. Existing selected monitoring folders determine
+coverage; no entire-drive watcher is added. Confirm Windows sign-out/shutdown
+is possible and an interrupted decision stays Pending without local consent.
+
 Start as a normal user on Windows 11. Confirm one instance/data directory, tray
 commands, closing to tray, startup enabled/disabled, correct focus, Tab/Shift+Tab,
 Alt access keys, Enter and Escape, screen-reader names, keyboard folder navigation,
@@ -106,9 +119,10 @@ Choose Files PX. Confirm Windows Shell breadcrumb navigation,
 search, This PC, New folder and company-root shortcuts work. Select a child folder,
 click Select Folder, review the filename, then click Move here. Verify exact bytes
 at the destination and source removal only after success. Repeat with a filename
-conflict, Cancel in the shell picker, Cancel in final confirmation, and a selection
-outside approved roots (must be rejected). Confirm Downloads appears
-only in the initial prompt. Test Alt/Tab/Escape, screen reader labels and DPI.
+conflict, Cancel in the shell picker, Back in final confirmation, and a selection
+outside approved roots (must be rejected). Since 0.2.15, Cancel/Back must return
+to the choices; the current local folder appears only in the initial prompt.
+Test Alt/Tab/Escape, screen reader labels and DPI.
 Only afterward use an IT-approved disposable SMB test directory to check mapped
 drive/UNC equivalence and server outage. Never use existing company documents.
 
@@ -121,8 +135,9 @@ new post-save prompt. Repeat with Word, Excel and PDF editors, including atomic
 replacement save behavior; changed creation timestamps must not cause another prompt.
 Also create documents before starting monitoring, then edit/Save them: no prompt.
 Rename an existing document and resave it; it must remain in place without a prompt.
-Test X/Escape and cancellation of company selection: these must not persist a Keep
-choice, and subsequent edits must not prompt again, including after restart.
+Attempt Close/Escape and cancellation of company selection before choosing:
+these must not persist a Keep choice or dismiss the pending decision. Complete
+an explicit local choice before testing subsequent edits and restart behavior.
 Files already in an approved server root must not prompt. Save As remains
 the original application's dialog and choosing a different path creates a new
 candidate. Confirm no local copy is automatically copied onto a server version.
@@ -192,9 +207,11 @@ Create a new disposable file in a watched folder. Verify Files PX and Downloads
 appear in one row and the warning is initially hidden. Click Files PX: company
 folder navigation should open immediately. On another new file, click Downloads:
 the same window expands to show the warning. Kthehu and Escape must collapse it;
-X must close without remembering a choice. Vazhdo me Downloads must keep the file
+Since 0.2.15 there is no X; Close/Alt+F4 must leave the choice pending.
+Vazhdo me Downloads must keep the file
 and remember it across repeated saves/restarts. A pending local choice must never
 be remembered before that confirmation. In the manual/browser Save dialog, the
 warning should appear only while Downloads is selected. Check keyboard focus,
-screen-reader announcement, DPI and narrow displays. Existing Downloads test cases
-below now require Vazhdo me Downloads to finalize a keep choice.
+screen-reader announcement, DPI and narrow displays. Replace Downloads in these
+steps with the actual selected folder name when testing Desktop or another folder.
+Only Vazhdo me <folder> finalizes a keep choice.

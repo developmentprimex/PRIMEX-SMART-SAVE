@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -41,6 +42,105 @@ internal static class Program
         var request = new SaveRequest(Guid.NewGuid(), source, "sample.txt", "Manual", DateTimeOffset.UtcNow);
         try
         {
+            foreach (string dismiss in new[] { "Close", "Escape", "AltF4" })
+            await Test("Placement requires an explicit choice despite " + dismiss, async () => {
+                var prompt = new PostSaveDialog("sample.txt");
+                bool attempted = false, blocked = false;
+                var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                driver.Tick += (_, _) => {
+                    if (attempted) return; attempted = true;
+                    if (dismiss == "Close") prompt.Close();
+                    else if (dismiss == "Escape") System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt);
+                    else SendMessage(new System.Windows.Interop.WindowInteropHelper(prompt).Handle, 0x0112, new IntPtr(0xF060), IntPtr.Zero);
+                    blocked = prompt.IsVisible;
+                    if (blocked)
+                    {
+                        ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        ((Button)prompt.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    }
+                };
+                driver.Start(); try { prompt.ShowDialog(); } finally { driver.Stop(); }
+                Assert(attempted && blocked && prompt.KeepChosen); await Task.CompletedTask;
+            });
+            foreach (string folderName in new[] { "Desktop", "Downloads", "Dosje_e_re" })
+            await Test("Placement names the actual source folder " + folderName, async () => {
+                string folder = Path.Combine(root, folderName); Directory.CreateDirectory(folder);
+                string file = Path.Combine(folder, "new.txt"); File.WriteAllText(file, "local source");
+                string label = "", confirmation = "", tooltip = ""; bool driven = false;
+                var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                driver.Tick += (_, _) => {
+                    if (driven || Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is not { } prompt) return;
+                    driven = true; var keep = (Button)prompt.FindName("KeepButton");
+                    label = System.Windows.Automation.AutomationProperties.GetName(keep);
+                    tooltip = keep.ToolTip?.ToString() ?? "";
+                    ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    confirmation = System.Windows.Automation.AutomationProperties.GetName((Button)prompt.FindName("ConfirmDownloadsButton"));
+                    if (folderName == "Desktop")
+                    {
+                        prompt.UpdateLayout();
+                        var bitmap = new RenderTargetBitmap((int)prompt.ActualWidth, (int)prompt.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(prompt);
+                        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                        using var preview = File.Create(Path.GetFullPath("artifacts/verification/required-desktop-choice.png")); encoder.Save(preview);
+                    }
+                    ((Button)prompt.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                };
+                driver.Start();
+                try { Assert(await new WpfDestinationSelector(servers, resolver, new FixedCompanyFolderPicker(root)).SelectAsync(new(Guid.NewGuid(), file, "new.txt", "Monitoring", DateTimeOffset.UtcNow)) == null); }
+                finally { driver.Stop(); }
+                Assert(driven && label == folderName && tooltip == folder && confirmation.Contains(folderName) && File.Exists(file));
+            });
+            await Test("Manual local choice starts at source folder and follows a newly selected destination", async () => {
+                var model = new SaveDialogViewModel(request, servers, resolver); model.CompanySelected = false;
+                Assert(model.Folder == root);
+                var dialog = new SaveDialog(request, servers, resolver); dialog.Show();
+                try
+                {
+                    ((RadioButton)dialog.FindName("OutsideOption")).IsChecked = true;
+                    string chosen = Path.Combine(root, "Desktop"); ((TextBox)dialog.FindName("FolderBox")).Text = chosen; dialog.UpdateLayout();
+                    Assert(System.Windows.Automation.AutomationProperties.GetName((RadioButton)dialog.FindName("OutsideOption")) == "Desktop");
+                }
+                finally { Dismiss(dialog); }
+                await Task.CompletedTask;
+            });
+            await Test("Manual destination cannot close until local keep or transfer is confirmed", async () => {
+                var dialog = new SaveDialog(request, servers, resolver); bool attempted = false, blocked = false;
+                var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                driver.Tick += (_, _) => {
+                    if (attempted) return; attempted = true; dialog.Close(); blocked = dialog.IsVisible;
+                    if (blocked) Dismiss(dialog);
+                };
+                driver.Start(); try { dialog.ShowDialog(); } finally { driver.Stop(); }
+                Assert(blocked && dialog.KeepChosen && dialog.Selection == null && File.ReadAllText(source) == "isolated desktop test");
+                await Task.CompletedTask;
+            });
+            await Test("Interrupted destination choice remains pending without recording local consent", async () => {
+                var store = new OperationStore(Path.Combine(root, "deferred-choice"));
+                var decisionQueue = new QueueViewModel(store, transfer, new DeferredChoiceSelector(), logger);
+                decisionQueue.Enqueue(request); await decisionQueue.ProcessAsync(request.Id);
+                Assert(store.Load().Single().State == OperationState.Pending && File.Exists(source));
+            });
+            await Test("Browser local destination uses the configured folder instead of its internal staging folder", async () => {
+                string downloads = Path.Combine(root, "Browser Downloads"), stage = Path.Combine(root, "staging-job"); Directory.CreateDirectory(downloads); Directory.CreateDirectory(stage);
+                string file = Path.Combine(stage, "new-download.txt"); File.WriteAllText(file, "completed staged download");
+                var browserOptions = new AppOptions(); browserOptions.Browser.DownloadsFolder = downloads;
+                bool driven = false; string label = "";
+                var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                driver.Tick += (_, _) => {
+                    if (driven || Application.Current.Windows.OfType<SaveDialog>().FirstOrDefault(x => x.IsVisible) is not { } dialog) return;
+                    driven = true; var local = (RadioButton)dialog.FindName("OutsideOption");
+                    label = System.Windows.Automation.AutomationProperties.GetName(local); local.IsChecked = true;
+                    ((Button)dialog.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                };
+                var browserRequest = new SaveRequest(Guid.NewGuid(), file, "new-download.txt", "Browser", DateTimeOffset.UtcNow);
+                DestinationSelection? selected;
+                driver.Start();
+                try { selected = await new WpfDestinationSelector(servers, resolver, new FixedCompanyFolderPicker(root), options: browserOptions).SelectAsync(browserRequest); }
+                finally { driver.Stop(); }
+                Assert(driven && label == "Browser Downloads" && selected?.Folder == downloads && selected.Kind == DestinationKind.OutsideServer);
+                var browserQueue = new QueueViewModel(new OperationStore(Path.Combine(root, "browser-placement")), transfer, new SelectedDestinationSelector(selected!), logger);
+                browserQueue.Enqueue(browserRequest); await browserQueue.ProcessAsync(browserRequest.Id);
+                Assert(browserQueue.Operations.Single().State == OperationState.Completed && !File.Exists(file) && File.ReadAllText(Path.Combine(downloads, "new-download.txt")) == "completed staged download");
+            });
             await Test("Startup diagnostics distinguish settings, permissions and storage errors", async () => {
                 Assert(StartupError.From(new UnauthorizedAccessException(), "loading settings").Code == "AccessDenied");
                 Assert(StartupError.From(new InvalidDataException("Invalid settings"), "loading settings").Message.Contains("Invalid settings"));
@@ -180,7 +280,7 @@ internal static class Program
                     copy.IsChecked = true; dialog.UpdateLayout(); Assert(((Button)dialog.FindName("MoveButton")).Content.ToString() == "_Copy here");
                     move.IsChecked = true; dialog.UpdateLayout(); Assert(((Button)dialog.FindName("MoveButton")).Content.ToString() == "_Move here");
                 }
-                finally { dialog.Close(); }
+                finally { Dismiss(dialog); }
                 await Task.CompletedTask;
             });
             await Test("Manual and browser destinations offer Copy only for Files PX", async () => {
@@ -193,7 +293,7 @@ internal static class Program
                     ((RadioButton)dialog.FindName("OutsideOption")).IsChecked = true; dialog.UpdateLayout();
                     Assert(!((Border)dialog.FindName("TransferOptions")).IsVisible);
                 }
-                finally { dialog.Close(); }
+                finally { Dismiss(dialog); }
                 await Task.CompletedTask;
             });
             await Test("Smart Save WPF window loads with Company Server selected", async () => {
@@ -208,7 +308,7 @@ internal static class Program
                 Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Visible);
                 ((RadioButton)dialog.FindName("CompanyOption")).IsChecked = true; dialog.UpdateLayout();
                 Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Collapsed);
-                dialog.Close(); await Task.CompletedTask;
+                Dismiss(dialog); await Task.CompletedTask;
             });
             await Test("Queued monitoring requests in projects or excluded folders do not open a placement dialog", async () => {
                 string project = Path.Combine(root, "queued-project"), excluded = Path.Combine(root, "queued-excluded"), linked = Path.Combine(root, "queued-linked-editor");
@@ -222,7 +322,7 @@ internal static class Program
                 bool unexpected = false;
                 var safety = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
                 safety.Tick += (_, _) => {
-                    foreach (var prompt in Application.Current.Windows.OfType<PostSaveDialog>().Where(x => x.IsVisible).ToArray()) { unexpected = true; prompt.Close(); }
+                    foreach (var prompt in Application.Current.Windows.OfType<PostSaveDialog>().Where(x => x.IsVisible).ToArray()) { unexpected = true; Dismiss(prompt); }
                 };
                 safety.Start();
                 try
@@ -243,7 +343,7 @@ internal static class Program
                 string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
                 var bitmap = new RenderTargetBitmap((int)dialog.ActualWidth, (int)dialog.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(dialog);
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "editor-connections.png"))) encoder.Save(stream);
-                dialog.Close();
+                Dismiss(dialog);
                 var start = EditorIntegrationService.CreateVSCodeInstallStart(@"C:\Program Files\Microsoft VS Code\bin\code.cmd", @"C:\Tools With Spaces\link.vsix");
                 Assert(!start.UseShellExecute && start.CreateNoWindow && start.Arguments.Contains("--install-extension \"C:\\Tools With Spaces\\link.vsix\""));
                 await Task.CompletedTask;
@@ -263,7 +363,7 @@ internal static class Program
                     driver.Tick += (_, _) => {
                         if (mainState == "Hidden" ? main.IsVisible : main.WindowState != WindowState.Minimized) mainRestored = true;
                         var dialogs = Application.Current.Windows.OfType<Window>().Where(x => x is PostSaveDialog or CompanyMoveDialog or SaveDialog && x.IsVisible).ToArray();
-                        if (elapsed.Elapsed > TimeSpan.FromSeconds(10)) { timedOut = true; foreach (var window in dialogs) window.Close(); return; }
+                        if (elapsed.Elapsed > TimeSpan.FromSeconds(10)) { timedOut = true; foreach (var window in dialogs) Dismiss(window); return; }
                         foreach (var window in dialogs)
                         {
                             if (window.Owner != null || !window.ShowInTaskbar || window.WindowStartupLocation != WindowStartupLocation.CenterScreen) invalidPresentation = true;
@@ -314,7 +414,7 @@ internal static class Program
                                     ((TextBox)save.FindName("FolderBox")).Text = company;
                                     ((Button)save.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                                 }
-                                else save.Close();
+                                else Dismiss(save);
                             }
                         }
                     };
@@ -326,14 +426,14 @@ internal static class Program
                         Assert(!timedOut && promptSeen && !mainRestored && !invalidPresentation && File.Exists(source));
                         Assert(mainState == "Hidden" ? !main.IsVisible : main.WindowState == WindowState.Minimized);
                         if (flow is "Move" or "Copy" or "BrowserCopy") Assert(companySeen && selected?.Folder == company && selected.Mode == (flow == "Move" ? TransferMode.Move : TransferMode.Copy));
-                        else Assert(selected == null && remembered.Contains(source) == (flow == "Keep"));
+                        else Assert(selected == null && remembered.Contains(source) == (flow is "Keep" or "Browser"));
                     }
                     finally { driver.Stop(); main.Close(); Application.Current.MainWindow = previous; }
                 });
             }
-            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape", "CancelWarning", "WarningToServer" })
+            foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape", "CancelWarning", "WarningToServer", "BackFromServer" })
             {
-                await Test("Post-save " + scenario + " does not repeat destination-type choice", async () => {
+                await Test("Post-save " + scenario + " requires a completed destination choice", async () => {
                     string company = Path.Combine(root, "company-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(company);
                     var companyService = new ServerFolderService(new() { ApprovedRoots = [company], DiscoverMappedDrives = false }, resolver);
                     var nativePicker = new FixedCompanyFolderPicker(scenario == "CancelFolder" ? null : company);
@@ -341,32 +441,29 @@ internal static class Program
                     var remembered = new RememberedLocationStore(rememberedFolder);
                     var owner = new Window { Title = "Isolated post-save flow test", Width = 400, Height = 200 }; owner.Show();
                     var previousOwner = Application.Current.MainWindow; Application.Current.MainWindow = owner;
-                    bool promptSeen = false, browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false, warningSeen = false;
+                    var prompts = new HashSet<PostSaveDialog>();
+                    bool browserSeen = false, repeatedChoice = false, submitted = false, timedOut = false, warningSeen = false;
+                    Exception? driverError = null;
                     var elapsed = Stopwatch.StartNew(); var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
                     driver.Tick += (_, _) => {
+                      try {
                         if (elapsed.Elapsed > TimeSpan.FromSeconds(8))
                         {
                             timedOut = true;
-                            foreach (var window in Application.Current.Windows.OfType<Window>().Where(x => x != owner && x.IsVisible).ToArray()) window.Close();
+                            foreach (var window in Application.Current.Windows.OfType<Window>().Where(x => x != owner && x.IsVisible).ToArray()) Dismiss(window);
                             return;
                         }
                         if (Application.Current.Windows.OfType<SaveDialog>().FirstOrDefault(x => x.IsVisible) is { } duplicate)
-                        { repeatedChoice = true; duplicate.Close(); return; }
-                        if (!promptSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt)
+                        { repeatedChoice = true; Dismiss(duplicate); return; }
+                        if (Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt && prompts.Add(prompt))
                         {
-                            promptSeen = true;
-                            Assert(prompt.Owner == owner && !prompt.ShowInTaskbar);
-                            Assert(((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !prompt.KeepChosen);
-                            if (scenario == "Keep")
-                            {
-                                prompt.UpdateLayout();
-                                string preview = Path.GetFullPath("artifacts/verification/post-save.png"); Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
-                                var bitmap = new RenderTargetBitmap((int)prompt.ActualWidth, (int)prompt.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(prompt);
-                                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var output = File.Create(preview); encoder.Save(output);
-                            }
-                            if (scenario == "Close") prompt.Close();
-                            else if (scenario == "Escape") System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt);
-                            else if (scenario is "Keep" or "CancelWarning" or "WarningToServer") ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            Assert(prompt.Owner == owner && !prompt.ShowInTaskbar && !prompt.KeepChosen);
+                            Assert(((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Collapsed);
+                            Assert(!remembered.Contains(source));
+                            if (scenario == "Close") { prompt.Close(); Assert(prompt.IsVisible && !prompt.KeepChosen); }
+                            if (scenario == "Escape") { System.Windows.Input.ApplicationCommands.Close.Execute(null, prompt); Assert(prompt.IsVisible && !prompt.KeepChosen); }
+                            if (scenario is "Keep" or "Close" or "Escape" or "CancelWarning" or "WarningToServer" || prompts.Count > 1)
+                                ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             else ((Button)prompt.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             return;
                         }
@@ -374,49 +471,46 @@ internal static class Program
                         {
                             warningSeen = true;
                             Assert(!warning.KeepChosen && !remembered.Contains(source) && File.Exists(source));
-                            if (scenario == "Keep")
-                            {
-                                warning.UpdateLayout();
-                                string preview = Path.GetFullPath("artifacts/verification/post-save-warning.png");
-                                var bitmap = new RenderTargetBitmap((int)warning.ActualWidth, (int)warning.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(warning);
-                                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var output = File.Create(preview)) encoder.Save(output);
-                                ((Button)warning.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                            }
-                            else if (scenario == "CancelWarning")
-                            {
-                                System.Windows.Input.ApplicationCommands.Close.Execute(null, warning);
-                                Assert(warning.IsVisible && ((Border)warning.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !warning.KeepChosen);
-                                warning.Close();
-                            }
-                            else if (scenario == "WarningToServer")
+                            if (scenario == "WarningToServer")
                             {
                                 ((Button)warning.FindName("BackButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                                 Assert(((Border)warning.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !warning.KeepChosen);
                                 ((Button)warning.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            }
+                            else
+                            {
+                                if (scenario == "CancelWarning")
+                                {
+                                    System.Windows.Input.ApplicationCommands.Close.Execute(null, warning);
+                                    Assert(warning.IsVisible && ((Border)warning.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !warning.KeepChosen);
+                                    ((Button)warning.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                }
+                                ((Button)warning.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             }
                             return;
                         }
                         if (!submitted && Application.Current.Windows.OfType<CompanyMoveDialog>().FirstOrDefault(x => x.IsVisible) is { } browser && ((Button)browser.FindName("MoveButton")).IsEnabled)
                         {
                             browserSeen = true; submitted = true;
-                            Assert(((Button)browser.FindName("CancelButton")).Content.ToString() == "Cancel");
-                            if (scenario == "CancelFolder") { browser.Close(); return; }
-                            browser.UpdateLayout();
-                            string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
-                            var bitmap = new RenderTargetBitmap((int)browser.ActualWidth, (int)browser.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(browser);
-                            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "company-move.png"))) encoder.Save(stream);
-                            ((Button)browser.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            Assert(((Button)browser.FindName("CancelButton")).Content.ToString() == "_Back");
+                            if (scenario == "BackFromServer") ((Button)browser.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            else ((Button)browser.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                         }
+                      } catch (Exception e) {
+                        driverError = e;
+                        foreach (var window in Application.Current.Windows.OfType<Window>().Where(x => x != owner && x.IsVisible).ToArray()) Dismiss(window);
+                      }
                     };
                     driver.Start();
                     try
                     {
                         var selected = await new WpfDestinationSelector(companyService, resolver, nativePicker, remembered).SelectAsync(request with { Integration = "Monitoring" });
-                        Assert(!timedOut && promptSeen && !repeatedChoice && File.Exists(source));
-                        if (scenario is "Move" or "WarningToServer") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName);
-                        else Assert(selected == null && nativePicker.Calls == (scenario == "CancelFolder" ? 1 : 0));
-                        Assert(warningSeen == (scenario is "Keep" or "CancelWarning" or "WarningToServer"));
-                        Assert(remembered.Contains(source) == (scenario == "Keep"));
+                        if (driverError != null) throw driverError;
+                        Assert(!timedOut && prompts.Count > 0 && !repeatedChoice && File.Exists(source));
+                        if (scenario is "Move" or "WarningToServer") Assert(browserSeen && selected?.Kind == DestinationKind.CompanyServer && selected.Folder == company && selected.FileName == request.DisplayName && !remembered.Contains(source));
+                        else Assert(selected == null && remembered.Contains(source));
+                        Assert(prompts.Count == (scenario is "CancelFolder" or "BackFromServer" ? 2 : 1));
+                        Assert(nativePicker.Calls == (scenario is "Move" or "WarningToServer" or "CancelFolder" or "BackFromServer" ? 1 : 0));
                         if (scenario == "Keep")
                         {
                             File.AppendAllText(source, " saved again");
@@ -447,7 +541,7 @@ internal static class Program
             await Test("Destination view model validates and switches to outside", async () => {
                 var model = new SaveDialogViewModel(request, servers, resolver) { Folder = root };
                 Assert(await model.ValidateAsync()); model.CompanySelected = false;
-                Assert(model.OutsideSelected && model.Folder == ""); model.Folder = root; Assert(await model.ValidateAsync());
+                Assert(model.OutsideSelected && model.Folder == root); model.Folder = root; Assert(await model.ValidateAsync());
                 model.FileName = "..\\escape"; Assert(!await model.ValidateAsync());
             });
             var selector = new FixedSelector(root);
@@ -548,6 +642,28 @@ internal static class Program
         public bool Cancel { get; set; }
         public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move) => Task.FromResult<DestinationSelection?>(Cancel ? null : new(root, "moved-" + request.DisplayName, DestinationKind.OutsideServer, ConflictChoice.Cancel));
     }
+    private static void Dismiss(Window window)
+    {
+        if (!window.IsVisible) return;
+        if (window is PostSaveDialog prompt)
+        {
+            ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            ((Button)prompt.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        }
+        else if (window is SaveDialog save && save.DataContext is SaveDialogViewModel model)
+        {
+            model.CompanySelected = false; model.Folder = Path.GetDirectoryName(model.Source)!; model.FileName = Path.GetFileName(model.Source);
+            ((Button)save.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        }
+        else window.Close();
+    }
+    private sealed class DeferredChoiceSelector : IDestinationSelector
+    {
+        public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move)
+            => throw new OperationCanceledException();
+    }
+    [DllImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
     private sealed class SelectedDestinationSelector(DestinationSelection selection) : IDestinationSelector
     {
         public TransferMode? LastInitialMode { get; private set; }

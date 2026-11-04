@@ -1,17 +1,21 @@
 # Automatic guidance for everyday downloads and saves
 
-In 0.2.4 the two choices are named **Files PX** (company server) and **Downloads**
-(keep the current local folder). Downloads is the local-choice label: a document
-already on Desktop/Documents stays there rather than being moved to Downloads.
+Since 0.2.15, the two choices are **Files PX** and the actual local folder where
+the file was saved: **Desktop**, **Downloads**, or another folder name. The full
+local folder path is displayed and available as a tooltip. Underscores in names
+are displayed literally. Choosing the local option reveals the Albanian advisory;
+**Vazhdo me <folder name>** explicitly keeps the original there and remembers the
+choice. **Kthehu** returns to the two choices. No file is moved just to match a label.
 
-Version 0.2.7 places Files PX and Downloads side by side in a compact prompt.
-Only clicking Downloads reveals the Albanian advisory: **Kujdes: Vetëm për
-dokumente provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të punës ruajini
-në Files PX.** Click **Vazhdo me Downloads** to keep the file and remember the
-choice, or **Kthehu** to return. Escape first dismisses the warning; X closes
-without remembering a choice. Files PX stays available. In the manual/browser
-destination screen the warning appears only when Downloads is selected, before
-the existing Confirm destination action. Local saving remains available.
+The placement window has no Close button. Close commands and Alt+F4 cannot
+dismiss it without a choice; Escape returns from the local advisory to the
+initial choices. Company-folder **Back** or cancelling the native picker also
+returns to the choices. A failed/unavailable server never forces a move: the
+local option remains available. In the manual/browser destination screen, the
+local option starts at the source folder (the configured Downloads folder for
+explicit staged browser downloads), updates after browsing/editing a local
+folder, and requires confirmation. Keeping the original path/name does not
+perform a transfer or open a self-conflict dialog.
 
 Open the updated desktop app and click **Automatic guidance…**. Select **Enable
 automatic guidance on this PC**, check Downloads and any other local folders you
@@ -55,7 +59,7 @@ it explicitly.
 | Save an existing document again | Keep its current location without another Smart Save prompt, including after restarting the agent or an atomic replacement save |
 | Save in a selected subfolder | Covered only if Include subfolders is checked |
 | Save in another folder | Add that particular local folder to setup to cover it |
-| Downloads | Show the advisory; Vazhdo me Downloads leaves the file untouched and persists the choice for later saves to the same path with the same creation timestamp, including after restart |
+| Current local folder | Show the advisory; Vazhdo me <folder> leaves the file untouched and remembers the explicit choice |
 | Files PX | Opens the company-folder browser directly; select a folder, choose Move or Copy and confirm. It does not repeat the Files PX / Downloads question |
 
 The company-folder step opens the native Windows Shell folder picker, with
@@ -68,9 +72,9 @@ Folder, then review the filename. Since 0.2.13, select **Move to Files PX** or
 **Copy to Files PX — keep original** and click **Move here** / **Copy here**.
 Copy preserves the original in Downloads or its current folder and verifies the
 server copy. Move removes the source only after verification. Existing filenames
-still require Keep Both or explicitly confirmed Replace. **Downloads**
-appears only in the initial post-save question. Cancel leaves the source
-untouched. The action is recorded in history and restored for a reviewed retry.
+still require Keep Both or explicitly confirmed Replace. The local choice
+appears in the initial post-save question. **Back** or cancelling the folder
+picker returns to that question without recording local consent. The action is recorded in history and restored for a reviewed retry.
 Later edits to the original are not synchronized with the server copy.
 Manual Move / Copy a file and the explicit
 browser-extension workflow still offer both original destination choices.
@@ -126,7 +130,7 @@ validation is complete.
 
 Version 0.2.3 remembers an explicit Keep choice using the normalized full path
 and creation timestamp, not the filename alone. Content/last-write changes do not
-invalidate the choice. Closing with X, Escape or cancelling the company-folder
+invalidate the choice. In that earlier version, closing with X, Escape or cancelling the company-folder
 step does not create a remembered choice.
 
 Version 0.2.8 also suppresses repeated-save prompts independently of explicit Keep

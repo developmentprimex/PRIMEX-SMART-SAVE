@@ -1,6 +1,6 @@
 # PrimEx Smart Save — instalimi për stafin
 
-1. Kopjo `PrimEx.SmartSave-0.2.14-win-x64.msi` në kompjuterin e punonjësit.
+1. Kopjo `PrimEx.SmartSave-0.2.15-win-x64.msi` në kompjuterin e punonjësit.
 2. Nëse është hapur versioni i vjetër, mbylle nga ikona pranë orës me **Exit**.
 3. Hape MSI-në me llogarinë normale të punonjësit dhe përfundo instalimin.
    .NET është i përfshirë; nuk duhet instaluar veçmas. Paketa është për Windows x64.
@@ -16,7 +16,7 @@
 7. Dil nga llogaria Windows dhe hyr përsëri: ikona duhet të jetë pranë orës,
    pa pasur nevojë që ta hapësh manualisht çdo ditë.
 
-**X e fsheh aplikacionin; Exit e ndalon.** Nëse përdoret Exit ose aplikacioni
+**X e fsheh dritaren kryesore; Exit e ndalon aplikacionin.** Nëse përdoret Exit ose aplikacioni
 pëson gabim, hapet sërish manualisht ose në hyrjen tjetër në Windows. Nuk është
 shërbim që punon pa përdorues të kyçur dhe nuk ka watchdog për rinisje pas crash-it.
 
@@ -24,7 +24,7 @@ Konfigurimi bëhet një herë për secilën llogari. Lejet ekzistuese të server
 mbeten në fuqi. Dokumentet nuk lëvizen pa konfirmim. Aplikacioni sugjeron vendosjen
 pas ruajtjes; ndërhyrja para Save në Word/Excel nuk është implementuar ende.
 
-Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.14
+Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.15
 me të njëjtën llogari Windows. Folderët dhe serveri ruhen. Lista standarde e
 vjetër e formateve kalon automatikisht në të gjitha llojet; filtrat e personalizuar
 ruhen dhe mund të ndryshohen te Automatic guidance. Për test shkarkoni një file
@@ -32,7 +32,7 @@ të ri, jo një file që ishte ruajtur para aktivizimit.
 
 Pas **Files PX**, hapet dritarja standarde e Windows-it për dosjet.
 Gjeni dosjen në server, klikoni **Select Folder**, pastaj zgjidhni **Move to Files PX**
-ose **Copy to Files PX — keep original** dhe konfirmoni me **Move here** / **Copy here**. **Cancel** e lë dokumentin aty ku është. Butoni **Downloads** shfaqet
+ose **Copy to Files PX — keep original** dhe konfirmoni me **Move here** / **Copy here**. **Back** ose anulimi i dosjes së serverit ju kthen te pyetja fillestare; pastaj zgjidhni qartë dosjen lokale ose Files PX. Butoni **Downloads** shfaqet
 vetëm në pyetjen e parë dhe e lë skedarin në dosjen lokale ku është ruajtur.
 
 Butonat **Files PX** dhe **Downloads** janë në të njëjtin rresht. Pas klikimit
@@ -92,3 +92,11 @@ Në 0.2.14, pritja standarde pas ruajtjes/shkarkimit ulet nga 3 në 1 sekondë.
 Konfigurimi i vjetër standard përshtatet automatikisht kur hapet programi.
 Skedarët që ende po shkarkohen, ndryshojnë ose mbahen të bllokuar nga aplikacioni
 vazhdojnë të presin. Përmirësimi vlen pas përfundimit të ruajtjes, jo gjatë saj.
+
+Në 0.2.15, pyetja nuk ka më **X** dhe nuk mbyllet me Escape ose Alt+F4 pa zgjedhje.
+Opsioni lokal tregon dosjen reale ku e ruajtët skedarin: **Desktop**, **Downloads**
+ose emrin e një dosjeje tjetër, bashkë me rrugën e plotë. Konfirmimi **Vazhdo me …**
+përdor të njëjtin emër. Anulimi i dosjes së serverit ose **Back** kthen te dy opsionet;
+nuk llogaritet si vendim për ruajtje lokale. Zgjedhja lokale e mban skedarin aty
+ku është. Kjo vlen për dosjet e aktivizuara te Automatic guidance; dosjet e tjera
+duhet të shtohen në monitorim që të shfaqin pyetjen pas ruajtjes.

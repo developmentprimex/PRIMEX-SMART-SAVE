@@ -44,7 +44,7 @@ public sealed class QueueViewModel(OperationStore store, ITransferService transf
             var item = Operations.First(x => x.Request.Id == id);
             if (item.State is OperationState.Completed or OperationState.Cancelled or OperationState.NeedsReview) return;
             var selection = await selector.SelectAsync(item.Request, initialMode: item.Mode);
-            if (selection == null) { Update(item with { State = OperationState.Cancelled }); Status = item.Request.Integration == "Monitoring" ? "Kept in its current location. No file was moved." : "Cancelled. The source file is still in its current location."; return; }
+            if (selection == null) { Update(item with { State = OperationState.Cancelled }); Status = "Kept in its current location. No file was moved."; return; }
             string destination = Path.Combine(selection.Folder, selection.FileName);
             item = item with { State = OperationState.Transferring, Destination = destination, ErrorCode = null, Mode = selection.Mode }; Update(item);
             log.Write("DestinationSelected", id); Status = "Transferring and verifying. You can cancel this transfer.";
@@ -65,6 +65,7 @@ public sealed class QueueViewModel(OperationStore store, ITransferService transf
             }
             finally { active.Dispose(); active = null; }
         }
+        catch (OperationCanceledException) { Status = "No location was confirmed. The file remains in place and the decision is pending."; log.Write("DestinationChoiceDeferred", id); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { Status = "Operation could not be queued or opened. Check local storage and configuration."; log.Write("QueueError", id, e.GetType().Name); }
         finally { queue.Release(); }
     }

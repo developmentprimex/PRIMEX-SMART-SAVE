@@ -8,6 +8,49 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 
 ## Executed
 
+Required destination choice and actual local-folder labels (0.2.15, 2026-11-04):
+placement windows hide the title-bar Close control and block dismissal without
+explicit local keeping or a valid transfer destination. Escape can return from
+the local advisory to the choices. Company-folder Back/native-picker cancellation
+returns to the initial question without recording local consent. Desktop,
+Downloads and arbitrary folder labels use the actual selected folder, with its
+full path shown and literal underscores preserved. Manual/browser local targets
+update after browsing/editing; staged browser downloads start at the configured
+Downloads folder. Keeping the original path/name performs no transfer or
+self-conflict. Interrupted decisions stay Pending; Windows session shutdown
+remains possible. Monitoring coverage, resave suppression and timing are unchanged.
+
+Release build passed with zero warnings/errors. All 172 automated checks passed:
+83 core/filesystem, 57 WPF/native, 11 browser/editor JavaScript, 9 self-contained
+runtime, 10 MSI and 2 editor-package checks. New WPF scenarios cover Close,
+Escape and SC_CLOSE/Alt+F4, Desktop/Downloads/custom names and underscores,
+dynamic manual local targets, local confirmation without transfer, pending-state
+preservation, native-picker cancellation/Back returning to choices and actual
+staged-browser transfer to its configured local target. Hidden/minimized main
+window and Move/Copy tests remain green. The Desktop advisory was rendered and
+visually inspected. Read-only review found no critical/important defect; its
+minor stale manual-test instruction was corrected.
+
+The packaged-agent test checks the native WS_SYSMENU bit is absent, sends
+WM_CLOSE and verifies the prompt/journal remain pending with no remembered local
+choice, then uses Windows UI Automation scoped to that isolated prompt to
+confirm Desktop keeping. Only after confirmation does the prompt close; the
+source remains and the main queue stays hidden. Popup latency was 1.407 seconds
+in this single local test, preserving the prior timing improvement. All 481 MSI
+embedded files were extracted and SHA-256 compared with the payload. Actual
+install/upgrade/uninstall, session shutdown, DPI/long-path/accessibility and
+network pilot acceptance remain manual.
+
+MSI: `artifacts/staff-installer-0.2.15/PrimEx.SmartSave-0.2.15-win-x64.msi`
+(58,192,488 bytes), SHA-256
+`559f2095b363d6cb3a762498058fc75387f83456409105e383a724f879b35436`.
+The package remains unsigned. After hash verification, removed the previous
+0.2.14 distribution and temporary build/extraction copies (976 generated files
+checked). Targets were resolved inside artifacts and checked for links/private
+state before removal. Only the current MSI remains, with its checksum, staff
+guide and verification evidence retained. No installed
+application, employee configuration or Windows setting was changed.
+
 Faster placement prompts (0.2.14, 2026-11-04): traced the delay to the default
 3-second quiet period before the existing 250 ms pending-file/exclusive-read
 check. Lowered the standard quiet period to 1 second. The watcher engine,

@@ -13,10 +13,11 @@ public partial class CompanyMoveDialog : Window
     private readonly TransferChoiceViewModel choice;
     private bool busy;
     public DestinationSelection? Selection { get; private set; }
-    public CompanyMoveDialog(SaveRequest request, IServerFolderService servers, ICompanyFolderPicker picker, TransferMode initialMode = TransferMode.Move)
+    public CompanyMoveDialog(SaveRequest request, IServerFolderService servers, ICompanyFolderPicker picker, TransferMode initialMode = TransferMode.Move, bool returnToChoices = false)
     {
         InitializeComponent(); this.servers = servers; this.picker = picker;
         choice = new(initialMode); DataContext = choice;
+        if (returnToChoices) { CancelButton.Content = "_Back"; RequiredDestinationChoice.HideCloseButton(this); }
         FileNameBox.Text = request.DisplayName;
         Loaded += async (_, _) => await SelectFolderAsync(true);
     }
@@ -38,6 +39,7 @@ public partial class CompanyMoveDialog : Window
         finally { busy = false; DetailsPanel.IsEnabled = true; MoveButton.IsEnabled = !string.IsNullOrEmpty(FolderBox.Text); }
     }
     private async void ChooseAnotherFolder(object sender, RoutedEventArgs e) => await SelectFolderAsync(false);
+    private void Back(object sender, RoutedEventArgs e) => DialogResult = false;
     private async void ConfirmMove(object sender, RoutedEventArgs e)
     {
         if (busy || string.IsNullOrEmpty(FolderBox.Text)) return;

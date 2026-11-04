@@ -187,7 +187,7 @@ class StaffRuntimeTests(unittest.TestCase):
             return windows
         with tempfile.TemporaryDirectory(prefix="PrimEx-Staff-Standalone-") as temporary:
             data = Path(temporary)
-            watched = data / "downloads"
+            watched = data / "Desktop"
             watched.mkdir()
             self.write_settings(data)
             settings = data / "appsettings.json"
@@ -207,7 +207,7 @@ class StaffRuntimeTests(unittest.TestCase):
                 for _ in range(100):
                     windows = visible_windows(process.pid)
                     self.assertFalse(any("Document Storage Manager" in title for _, title in windows))
-                    prompt = next((hwnd for hwnd, title in windows if title == "Downloads or Files PX"), None)
+                    prompt = next((hwnd for hwnd, title in windows if title == f"{watched.name} or Files PX"), None)
                     if prompt:
                         break
                     self.assertIsNone(process.poll())
@@ -216,7 +216,36 @@ class StaffRuntimeTests(unittest.TestCase):
                 latency = time.perf_counter() - saved_at
                 print(f"PROMPT_LATENCY_SECONDS={latency:.3f}", flush=True)
                 self.assertLess(latency, 2.5, "A completed local save should not wait for the former 3-second delay")
-                user32.PostMessageW(prompt, 0x0010, 0, 0)  # WM_CLOSE: dismiss this isolated test prompt.
+                user32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+                self.assertEqual(0, user32.GetWindowLongW(prompt, -16) & 0x00080000)  # No title-bar Close button.
+                user32.PostMessageW(prompt, 0x0010, 0, 0)  # WM_CLOSE must not dismiss without a choice.
+                time.sleep(0.2)
+                self.assertTrue(any(hwnd == prompt for hwnd, _ in visible_windows(process.pid)))
+                requests = [json.loads(path.read_text()) for path in (data / "operations").glob("*.json")]
+                self.assertEqual(0, requests[0]["State"])
+                self.assertEqual([], list((data / "remembered-locations").glob("*.json")))
+                # Invoke only this isolated process's explicit local choice through Windows UI Automation.
+                script = r'''
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+$window = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]PROMPT_HANDLE)
+function Find-Button([string]$name) {
+    $condition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $name)
+    return $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+$local = Find-Button 'LOCAL_NAME'
+if ($null -eq $local) { throw 'Local choice not found' }
+$local.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+$confirm = $null
+for ($attempt = 0; $attempt -lt 40 -and $null -eq $confirm; $attempt++) {
+    $confirm = Find-Button 'Vazhdo me LOCAL_NAME'
+    if ($null -ne $confirm -and ($confirm.Current.IsOffscreen -or -not $confirm.Current.IsEnabled)) { $confirm = $null }
+    if ($null -eq $confirm) { Start-Sleep -Milliseconds 50 }
+}
+if ($null -eq $confirm) { throw 'Local confirmation not found' }
+$confirm.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+'''.replace("PROMPT_HANDLE", str(prompt)).replace("LOCAL_NAME", watched.name)
+                subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script], check=True, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW, capture_output=True, text=True)
                 for _ in range(60):
                     requests = [json.loads(path.read_text()) for path in (data / "operations").glob("*.json")]
                     if requests and requests[0]["State"] == 4:

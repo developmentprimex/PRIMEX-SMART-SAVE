@@ -1,6 +1,8 @@
 ﻿# Exact source-file inventory
 
 - `docs/editor-integrations.md`
+- `src/PrimEx.SmartSave.Desktop/Components/RequiredDestinationChoice.cs`
+- `src/PrimEx.SmartSave.Desktop/ViewModels/LocalFolderDisplay.cs`
 - `src/PrimEx.SmartSave.Desktop/ViewModels/TransferChoiceViewModel.cs`
 - `extensions/build_editor_links.py`
 - `extensions/vscode/package.json`
