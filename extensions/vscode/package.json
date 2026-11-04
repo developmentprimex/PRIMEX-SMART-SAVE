@@ -1,0 +1,26 @@
+{
+  "name": "smart-save-workspace-link",
+  "displayName": "PrimEx Smart Save Workspace Link",
+  "description": "Automatically keep files in every open local coding workspace without Smart Save placement prompts.",
+  "publisher": "primex",
+  "version": "0.2.12",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "main": "./extension.cjs",
+  "activationEvents": ["*"],
+  "extensionKind": ["ui"],
+  "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": false },
+  "contributes": {
+    "commands": [{ "command": "primexSmartSave.refreshWorkspaces", "title": "PrimEx Smart Save: Refresh Workspace Link" }],
+    "configuration": {
+      "title": "PrimEx Smart Save",
+      "properties": {
+        "primexSmartSave.dataDirectory": {
+          "type": "string", "default": "", "scope": "application",
+          "description": "Optional Smart Save data directory for a custom or developer profile. Leave empty for the normal installed app."
+        }
+      }
+    }
+  },
+  "license": "UNLICENSED"
+}

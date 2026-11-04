@@ -3,9 +3,20 @@ using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Core.Services;
 namespace PrimEx.SmartSave.Desktop.ViewModels;
-public sealed class QueueViewModel(OperationStore store, ITransferService transfers, IDestinationSelector selector, IEventLog log) : ObservableObject
+public sealed class QueueViewModel(OperationStore store, ITransferService transfers, IDestinationSelector selector, IEventLog log, bool loadHistory = true) : ObservableObject
 {
-    public ObservableCollection<PendingOperation> Operations { get; } = new(store.Load());
+    private ObservableCollection<PendingOperation> operations = new(loadHistory ? store.Load() : []);
+    public ObservableCollection<PendingOperation> Operations { get => operations; private set => Set(ref operations, value); }
+    private bool isReady = loadHistory;
+    public bool IsReady { get => isReady; private set => Set(ref isReady, value); }
+    public async Task InitializeAsync()
+    {
+        if (IsReady) return;
+        var history = await Task.Run(store.Load);
+        Operations = new(history);
+        IsReady = true;
+        Status = "Ready. Choose a file to move, or review pending downloads.";
+    }
     private readonly SemaphoreSlim queue = new(1);
     public bool IsProcessing => queue.CurrentCount == 0;
     private CancellationTokenSource? active;

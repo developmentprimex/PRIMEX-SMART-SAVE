@@ -35,7 +35,7 @@ def generate(payload, output):
             ET.SubElement(component, "RegistryValue", Root="HKCU", Key=r"Software\PrimEx\SmartSave\InstallerFiles", Name=component_id, Type="integer", Value="1", KeyPath="yes")
             ET.SubElement(component, "RemoveFolder", Id=component_id + "Remove", On="uninstall")
         for file in sorted(p for p in top_path.rglob("*") if p.is_file()):
-            if file.is_symlink() or any(x.lower() in ("data", "operations", "logs", "remembered-locations", ".git") for x in file.relative_to(top_path).parts[:-1]) or file.name in ("portable.mode", "agent.lock") or file.suffix.lower() == ".pdb":
+            if file.is_symlink() or any(x.lower() in ("data", "operations", "logs", "remembered-locations", "editor-workspaces", ".git") for x in file.relative_to(top_path).parts[:-1]) or file.name in ("portable.mode", "agent.lock") or file.suffix.lower() == ".pdb":
                 raise ValueError(f"Unexpected file in release payload: {file.name}")
             relative = file.relative_to(payload).as_posix()
             component_id = identifier("C", relative)

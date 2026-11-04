@@ -22,6 +22,7 @@ public partial class App : Application
     private AgentActivationService? activation;
     private int monitorGeneration;
     private bool setupOpen;
+    private double historyLoadMilliseconds;
     private AppOptions options = new();
     public bool IsExiting { get; private set; }
     public string ConfigPath { get; private set; } = "";
@@ -58,9 +59,11 @@ public partial class App : Application
             collection.AddSingleton<ITransferService, SafeTransferService>();
             collection.AddSingleton(new OperationStore(Path.Combine(DataDirectory, "operations")));
             collection.AddSingleton(new RememberedLocationStore(Path.Combine(DataDirectory, "remembered-locations")));
+            collection.AddSingleton(_ => new EditorWorkspaceRegistry(Path.Combine(DataDirectory, "editor-workspaces")));
             collection.AddSingleton<IDestinationSelector, WpfDestinationSelector>();
             collection.AddSingleton<ICompanyFolderPicker, WindowsCompanyFolderPicker>();
-            collection.AddSingleton<QueueViewModel>(); collection.AddSingleton<MainWindow>();
+            collection.AddSingleton(s => new QueueViewModel(s.GetRequiredService<OperationStore>(), s.GetRequiredService<ITransferService>(), s.GetRequiredService<IDestinationSelector>(), s.GetRequiredService<IEventLog>(), loadHistory: false));
+            collection.AddSingleton<MainWindow>();
             services = collection.BuildServiceProvider();
             MainWindow = services.GetRequiredService<MainWindow>();
             activation = new AgentActivationService(DataDirectory, () => Dispatcher.BeginInvoke(() => {
@@ -68,13 +71,22 @@ public partial class App : Application
             })); activation.Start();
             services.GetRequiredService<IEventLog>().Write("ApplicationStarted");
             SetupTray();
+            var startupQueue = services.GetRequiredService<QueueViewModel>();
+            startupQueue.Status = "Loading saved operations…";
+            startupQueue.GuidanceStatus = options.Monitoring.Enabled ? "Preparing automatic guidance… Existing documents will stay in place." : "Automatic guidance is off. Set it up to watch downloads and saved documents.";
+            if (!e.Args.Contains("--background")) MainWindow.Show();
+            // Show the window before reading the history or indexing watched folders.
+            var historyWatch = Stopwatch.StartNew();
+            await startupQueue.InitializeAsync();
+            historyLoadMilliseconds = historyWatch.Elapsed.TotalMilliseconds;
+            if (IsExiting) return;
             if (options.Browser.Enabled)
             {
                 var queue = services.GetRequiredService<QueueViewModel>();
-                pipe = new NativePipeServer(options, DataDirectory, queue, Dispatcher, services.GetRequiredService<IEventLog>(), id => { ShowMain(); _ = queue.ProcessAsync(id); }); pipe.Start();
+                pipe = new NativePipeServer(options, DataDirectory, queue, Dispatcher, services.GetRequiredService<IEventLog>(), id => { _ = queue.ProcessAsync(id); }); pipe.Start();
             }
-            StartMonitoring();
-            if (!e.Args.Contains("--background")) MainWindow.Show();
+            await StartMonitoringAsync();
+            if (IsExiting) return;
             if (File.Exists(Path.Combine(AppContext.BaseDirectory, "installed.mode")) && !options.GuidanceSetupCompleted)
             {
                 services.GetRequiredService<IEventLog>().Write("FirstRunSetupRequested");
@@ -104,7 +116,7 @@ public partial class App : Application
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Automatic guidance…", null, async (_, _) => await OpenAutomaticGuidanceAsync());
         menu.Items.Add("View Pending Operations", null, (_, _) => ShowMain());
-        menu.Items.Add("About", null, (_, _) => MessageBox.Show("PrimEx Smart Save 0.2.7\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
+        menu.Items.Add("About", null, (_, _) => MessageBox.Show($"PrimEx Smart Save {typeof(App).Assembly.GetName().Version?.ToString(3)}\nDocument Storage Manager\nPilot candidate. Office interception is not enabled.", "About PrimEx Smart Save"));
         menu.Items.Add("Exit", null, (_, _) => {
             var queue = services!.GetRequiredService<QueueViewModel>();
             if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before exiting."; ShowMain(); return; }
@@ -114,7 +126,7 @@ public partial class App : Application
         tray.DoubleClick += (_, _) => ShowMain();
     }
     public void ShowMain() { MainWindow!.Show(); MainWindow.WindowState = WindowState.Normal; MainWindow.Activate(); }
-    private void StartMonitoring()
+    private async Task StartMonitoringAsync()
     {
         var queue = services!.GetRequiredService<QueueViewModel>();
         int generation = ++monitorGeneration;
@@ -122,7 +134,7 @@ public partial class App : Application
         {
             // A running watcher sees a fixed settings snapshot until explicitly reconfigured.
             var snapshot = JsonSerializer.Deserialize<AppOptions>(JsonSerializer.Serialize(options))!;
-            monitor = new DirectoryMonitor(snapshot, services!.GetRequiredService<IEventLog>(), services!.GetRequiredService<RememberedLocationStore>());
+            monitor = new DirectoryMonitor(snapshot, services!.GetRequiredService<IEventLog>(), services!.GetRequiredService<RememberedLocationStore>(), services!.GetRequiredService<EditorWorkspaceRegistry>());
             monitor.MissedEvents += () => Dispatcher.BeginInvoke(() => { if (generation == monitorGeneration) queue.Status = "Some folders or monitoring events are unavailable. Review the automatic guidance settings."; });
             monitor.Candidate += path => Dispatcher.BeginInvoke(async () => {
                 if (generation != monitorGeneration) return;
@@ -131,19 +143,22 @@ public partial class App : Application
                     var request = new SaveRequest(Guid.NewGuid(), path, Path.GetFileName(path), "Monitoring", DateTimeOffset.UtcNow);
                     queue.Enqueue(request);
                     if (setupOpen) { queue.Status = "A saved document is pending. Review it after finishing setup."; return; }
-                    ShowMain(); await queue.ProcessAsync(request.Id);
+                    await queue.ProcessAsync(request.Id);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { queue.Status = "A monitored file could not be queued. It remains in its current location."; }
             });
-            monitor.Start();
+            queue.GuidanceStatus = "Preparing automatic guidance… Existing documents will stay in place.";
+            await monitor.StartAsync();
         }
+        if (generation != monitorGeneration || IsExiting) return;
         queue.GuidanceStatus = options.Monitoring.Enabled
-            ? $"Automatic guidance ON — {monitor?.ActiveFolderCount ?? 0} of {options.Monitoring.Folders.Length} selected folders active. Prompts appear after files are saved and unlocked."
+            ? $"Automatic guidance ON — {monitor?.ActiveFolderCount ?? 0} folder watchers active. Prompts appear for new files after saving and unlocking. Existing documents stay in place when resaved."
             : "Automatic guidance is off. Set it up to watch downloads and saved documents.";
     }
     public async Task OpenAutomaticGuidanceAsync()
     {
         var queue = services!.GetRequiredService<QueueViewModel>();
+        if (!queue.IsReady) { queue.Status = "Loading saved operations. Please wait a moment."; ShowMain(); return; }
         if (setupOpen) return;
         if (queue.IsProcessing) { queue.Status = "Finish or cancel the current operation before changing automatic guidance."; ShowMain(); return; }
         setupOpen = true;
@@ -162,7 +177,7 @@ public partial class App : Application
                 options.Monitoring = updated.Monitoring;
                 options.StartWithWindows = updated.StartWithWindows;
                 options.GuidanceSetupCompleted = updated.GuidanceSetupCompleted;
-                StartMonitoring();
+                await StartMonitoringAsync();
                 services!.GetRequiredService<IEventLog>().Write(updated.Monitoring.Enabled ? "AutomaticGuidanceEnabled" : "AutomaticGuidanceDisabled");
                 queue.Status = updated.Monitoring.Enabled ? "Automatic guidance is active. Download or save a new document into a selected folder to test it." : "Automatic guidance is disabled. Your files remain where they are.";
             }) { Owner = MainWindow }.ShowDialog();
@@ -178,5 +193,15 @@ public partial class App : Application
         Process.Start(new ProcessStartInfo("notepad.exe") { ArgumentList = { ConfigPath }, UseShellExecute = true });
         MessageBox.Show("Edit approved roots and integration settings in this configuration file. Restart the agent after saving. Managed configuration may require your IT administrator.", "PrimEx Smart Save Settings");
     }
+    public object MonitoringDiagnostics => new
+    {
+        activeEditorWorkspaces = services?.GetRequiredService<EditorWorkspaceRegistry>().ActiveWorkspaceCount,
+        enabled = options.Monitoring.Enabled,
+        historyLoadMilliseconds,
+        startupMilliseconds = monitor?.StartupMilliseconds,
+        indexedFileCount = monitor?.IndexedFileCount,
+        pendingFileCount = monitor?.PendingFileCount,
+        activeWatcherCount = monitor?.ActiveFolderCount
+    };
     protected override void OnExit(ExitEventArgs e) { activation?.Dispose(); pipe?.Dispose(); if (monitor != null) monitor.DisposeAsync().AsTask().GetAwaiter().GetResult(); tray?.Dispose(); services?.Dispose(); instanceLock?.Dispose(); base.OnExit(e); }
 }

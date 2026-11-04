@@ -16,7 +16,7 @@ def main():
     parser.add_argument("--wix-ui", required=True, help="WiX 6 UI extension DLL")
     parser.add_argument("--offline-feed", type=Path)
     parser.add_argument("--runtime-version", default="10.0.8")
-    parser.add_argument("--version", default="0.2.7")
+    parser.add_argument("--version", default="0.2.12")
     parser.add_argument("--output", type=Path, default=ROOT / "artifacts" / "staff-release")
     parser.add_argument("--extension-id", action="append", default=[], help="Optional exact approved Chrome/Edge extension ID")
     args = parser.parse_args()
@@ -37,6 +37,7 @@ def main():
             command += ["--source", args.offline_feed.resolve(), "-p:NuGetAudit=false"]
         run(*command)
     (payload / "Desktop" / "installed.mode").write_text("Installed per-user staff build\n", encoding="utf-8")
+    run("python", ROOT / "extensions/build_editor_links.py", "--output", payload / "Desktop" / "EditorIntegrations")
     if args.extension_id:
         manifest = dict(name="com.primex.smartsave", description="PrimEx Smart Save completed-download bridge", path=r"NativeHost\PrimEx.SmartSave.NativeHost.exe", type="stdio", allowed_origins=[f"chrome-extension://{x}/" for x in sorted(set(args.extension_id))])
         (payload / "native-host.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

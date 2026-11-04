@@ -13,10 +13,20 @@
         <Button Content="_Add another local folder…" Click="AddFolder" HorizontalAlignment="Left" Margin="0,10,0,4"/>
         <CheckBox Content="Include _subfolders of the selected folders" IsChecked="{Binding IncludeSubdirectories}" Margin="0,8,0,0"/>
       </StackPanel></Border>
+      <Border Style="{StaticResource Card}"><StackPanel>
+        <TextBlock Text="Keep coding projects in place" FontWeight="SemiBold"/>
+        <CheckBox x:Name="SkipProjectsBox" Content="Skip coding projects automatically (recommended)" IsChecked="{Binding IgnoreDevelopmentProjects}" Margin="0,10,0,4"/>
+        <TextBlock Text="Skips coding projects and linked editor workspaces, including their documents and assets. Connect each editor once to protect every new project automatically, even without Git." TextWrapping="Wrap" Foreground="#617586" Margin="0,4,0,8"/>
+        <Button Content="Connect VS Code / Visual Studio…" Click="ConnectEditors" HorizontalAlignment="Left"/>
+        <Label Content="Never prompt in these folders — one per line" Target="{Binding ElementName=ExcludedFoldersBox}"/>
+        <TextBox x:Name="ExcludedFoldersBox" Text="{Binding ExcludedFolders, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="60" MaxHeight="120" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Excluded folders"/>
+        <Button Content="Exclude a _folder…" Click="ExcludeFolder" HorizontalAlignment="Left"/>
+        <TextBlock Text="Excluded folders and all their subfolders are skipped, even when they are inside a watched folder. Add a project here if it is not recognized automatically." TextWrapping="Wrap" Foreground="#617586" Margin="0,6,0,0"/>
+      </StackPanel></Border>
       <Label Content="Company server roots — one per line" Target="{Binding ElementName=RootsBox}"/>
       <TextBox x:Name="RootsBox" Text="{Binding ApprovedRoots, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="70" MaxHeight="130" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Company server roots"/>
       <Button Content="Browse company _root…" Click="BrowseRoot" HorizontalAlignment="Left"/>
-      <TextBlock Text="Choose your authorized Files PX company folder, or leave roots empty to test Downloads (keep the current local folder). Local saving remains available. Existing files are not scanned or moved automatically." Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
+      <TextBlock Text="Choose your authorized Files PX company folder, or leave roots empty to test Downloads (keep the current local folder). Local saving remains available. Existing files stay in their current location." Foreground="#617586" TextWrapping="Wrap" Margin="0,8"/>
       <CheckBox Content="All completed file types (recommended, including images)" IsChecked="{Binding AllFileTypes}" Margin="0,12,0,4" FontWeight="SemiBold"/>
       <TextBlock Text="Includes PDFs, Office documents, PNG/JPG images, archives and other completed files in the selected folders. Temporary files, incomplete downloads and cache folders remain excluded." Foreground="#617586" TextWrapping="Wrap" Margin="0,4,0,8"/>
       <Label Content="Specific file types (only when All completed file types is unchecked)" Target="{Binding ElementName=TypesBox}"/><TextBox x:Name="TypesBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CustomFileTypesEnabled}" AutomationProperties.Name="Specific file types"/>

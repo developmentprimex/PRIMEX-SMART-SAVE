@@ -1,4 +1,4 @@
-# Validation record — 2026-11-03
+# Validation record — 2026-11-04
 
 This is a tested implementation candidate, **not production acceptance**.
 
@@ -7,6 +7,177 @@ WPF available, Node 24.12.0. Repository was empty. Office inventory reports
 Office 2024 Retail x64 16.0.17928.20148; that does not establish integration compatibility.
 
 ## Executed
+
+Final version cleanup (2026-11-04): confirmed the only remaining MSI is 0.2.12
+and its checksum matches the release record. Removed the two obsolete isolated
+VS Code host-smoke profiles left from 0.2.11 (52 files, 174,233 bytes), after
+verifying their workspace directories were empty, their settings pointed into
+the isolated test roots and no paths/ancestors were links. The updater-block log
+was retained as `artifacts/verification/editor-host-updater-block.log`. Source,
+configuration, build tools, measurement reports and current distribution remain.
+No application tests were rerun for this artifact-only cleanup.
+
+Standalone placement prompts (0.2.12, 2026-11-04): monitoring and browser-download
+callbacks no longer open the main queue. Placement, company-folder and browser
+destination dialogs only use the main window as owner if it is already visible
+and not minimized. Otherwise they center independently with a taskbar/Alt+Tab
+entry. Dismissal, local Keep and company selection leave the queue hidden or
+minimized. Explicit tray/main-window actions remain available.
+
+Release build passed with zero warnings/errors. All 59 relevant release checks
+passed: 38 WPF/native, 9 self-contained runtime, 10 MSI and 2 editor package checks.
+Six new WPF scenarios exercise Keep, company selection and browser destination
+dialogs against hidden/minimized owners; existing visible-owner flows also pass.
+The standalone prompt was rendered and visually inspected. A new packaged-agent
+test uses native window enumeration to verify that a background save shows the
+placement prompt only, never the main queue; dismissing it returns to no visible
+app windows, retains the source and persists cancellation. All 481 embedded files
+were extracted and SHA-256 compared with the published payload.
+
+Core/filesystem and browser/editor JavaScript behavior is unchanged and was not
+rerun; its previous evidence remains below. Editor VSIX manifests were checked
+again after versioning. The actual-editor activation limits from 0.2.11 remain.
+MSI install/upgrade and pilot DPI/accessibility/network acceptance remain manual.
+
+MSI: `artifacts/staff-installer-0.2.12/PrimEx.SmartSave-0.2.12-win-x64.msi`
+(58,188,392 bytes), SHA-256
+`b60a0d121d7813b57f386aba7fd4f7568674ee5e6a40d51d67a22f04a0147db5`.
+The package remains unsigned. Following the user's current-version-only cleanup
+preference, obsolete 0.2.11 and generated build/extraction copies were removed
+after verification; current MSI, checksum and staff guide remain with their hash
+verified. No installed application/configuration was changed.
+
+One-time editor workspace links (0.2.11, 2026-11-04): added VS Code and Visual
+Studio VSIX packages, a Connect editors screen in Automatic guidance and a local
+current-user workspace lease registry. New open folders/solutions can now be
+suppressed without Git/project markers or per-project configuration. Both editor
+publishers interoperate with the .NET reader. Leases update on workspace changes,
+heartbeat every 30 seconds and expire within 90 seconds; closing unregisters them.
+The agent rechecks queued requests and reports only a workspace count in diagnostics.
+Visual Studio's .vs directory is now an independent project marker too.
+
+Desktop solution and Visual Studio SDK package builds passed with zero warnings/
+errors. All 141 automated checks passed: 78 core/filesystem, 32 WPF/native,
+11 browser/editor Node, 2 editor VSIX checks, 10 MSI and 8 self-contained runtime.
+The packaged-agent regression verified that four new files in an empty linked
+workspace do not enter the operation journal, then that removing the lease restores
+guidance for a new ordinary PDF. The editor connection screen was rendered and
+visually inspected. All 481 MSI payload files (including both links) were extracted
+and SHA-256 checked against the published payload. Runtime tests used that payload.
+
+The VS Code VSIX successfully installed into an isolated profile/extensions folder.
+The real extension-host smoke could not run because VS Code's updater held the
+vscode-updating mutex; the launcher logged that condition and exited. No updater
+or lock was bypassed. No supported Visual Studio host is installed here. Therefore
+actual extension loading, editor project switching and Visual Studio multi-root
+Open Workspace remain pilot acceptance checks; publisher/API mocks do not certify
+them. No installed Smart Save configuration or normal editor profile was changed.
+See docs/editor-integrations.md for scope, installation and primary API references.
+
+MSI: `artifacts/staff-installer-0.2.11/PrimEx.SmartSave-0.2.11-win-x64.msi`
+(58,204,776 bytes), SHA-256
+`467acc5054a410fbfc29a9f558a9e75f0dc98e1892fb58b331ad9b2082ea9ba4`.
+The MSI/VSIX packages remain unsigned. Following the user's latest-version-only
+cleanup preference, obsolete 0.2.10 and generated build/extraction/editor package
+copies were removed after validation. Current distribution contains MSI, checksum
+and staff guide; editor SDK/build tools, source, validation reports and the blocked
+host smoke profiles/logs remain.
+
+Coding-project exclusions (0.2.10, 2026-11-04): recognized Git/worktree, VS Code
+and common coding-project roots now suppress monitoring prompts for their entire
+subtree, including documents/assets. Explicit excluded folders and the default-on
+project-detection switch are editable in Automatic guidance and persisted. Old
+settings gain protection without rewriting the file or changing monitoring
+enablement. Standard profile/document-container roots are never auto-classified.
+Marker events invalidate cached detection; ignored dependency manifests do not
+invalidate project caches. Old queued requests are rechecked before opening a
+dialog. Explicit manual moves and explicit browser downloads remain available.
+
+Release build: zero warnings/errors. All 130 checks passed: 74 core, 31 desktop/
+native integration, 8 browser, 10 installer and 7 self-contained runtime. Coverage
+includes multiple marker types, project ancestors above the selected folder,
+worktrees, assets, sibling-folder boundaries, live Git/manifest initialization,
+old-config defaults, explicit settings persistence and stale queued requests.
+The packaged-app regression generated eight project/excluded-folder assets and
+an ordinary neighboring PDF; only the PDF entered the operation journal. The
+updated WPF setup screen was rendered and visually inspected; controls are
+readable, the long form scrolls, and Apply/Cancel remain pinned. All 479 embedded
+MSI files were extracted and hash-verified against the published payload.
+
+The same startup corpus measured 81 ms median index preparation with project
+detection enabled (three warmed runs), preserving the prior startup improvement.
+Actual installed Codex/VS Code workflows and cold launch remain manual pilot
+checks. No installed app or live user configuration was changed by this work.
+
+MSI: `artifacts/staff-installer-0.2.10/PrimEx.SmartSave-0.2.10-win-x64.msi`
+(58,188,328 bytes), SHA-256
+`a6140131ce20c884b7c3dbd4fb08a0d3facba170b3eda06ddb21f1b6740dbd2b`.
+The MSI remains unsigned. Following the earlier latest-version-only cleanup,
+0.2.9 and newly generated build/extraction/benchmark copies were removed after
+verification. Only the 0.2.10 MSI, checksum and copied staff guide remain in the
+current release folder; measurements, screenshots, source, tools and configuration
+were retained. The distribution MSI hash was checked unchanged after cleanup.
+
+Version cleanup (2026-11-04, after 0.2.9 validation): at the user's request,
+removed 14,642 obsolete/generated files totaling 5,984,736,174 bytes (5.57 GiB).
+Targets included 0.2.7/0.2.8 installers, the old-version archive, extracted MSI
+images, benchmark binaries and the current release's duplicate publish payload
+and build intermediates. Every target and ancestor was resolved inside the
+workspace artifacts directory and checked for links and private app state before
+deletion. Code, repositories, build tools/feeds, configuration, preview state,
+screenshots and measurement reports were retained. The only remaining MSI is
+0.2.9, alongside its checksum and copied staff guide. Its SHA-256 was verified
+unchanged before and after cleanup. No application tests were rerun for artifact
+removal. Historical release/publish/extraction paths below may no longer exist;
+their validation records and hashes remain as evidence.
+
+Startup optimization (0.2.9, 2026-11-04): window creation/showing now precedes
+background journal loading and monitor initialization. Existing-file indexing
+prunes excluded directory trees and uses enumeration metadata; overlapping
+recursive scopes share one watcher. Ignored events do not enter the pending queue,
+and idle monitoring has no periodic timer. Export diagnostics includes actual
+version and process/startup metrics. See `docs/performance.md` for methodology.
+
+Against the same 2,000-document/12,000-excluded-file local corpus, three warmed
+runs had median preparation times of 4,455 ms (0.2.8) and 83 ms (0.2.9).
+Managed allocations fell from 117.4 MiB to 22.0 MiB. These measurements cover
+monitor initialization on the development PC, not total launch or another laptop.
+
+Release build passed with zero warnings/errors. All 123 checks passed: 70 core,
+29 desktop/native integration, 8 browser, 10 installer and 6 self-contained runtime.
+New regressions cover startup scope/exclusions/cancellation, overlapping scopes
+and forward-slash paths, discarded temporary events, asynchronous initialization
+with concurrent disposal, and deferred history/interrupted-transfer recovery.
+All 479 embedded MSI files were extracted and SHA-256 compared with the published
+payload; runtime checks used that matching payload. Actual MSI install/upgrade,
+cold-start timing on the colleague's laptop and real large-history UI acceptance
+were not performed. No existing installed app or user settings were changed.
+
+MSI: `artifacts/staff-installer-0.2.9/PrimEx.SmartSave-0.2.9-win-x64.msi`
+(58,176,040 bytes), SHA-256
+`192e1efb810f2f811b96a1276ba878ba23a6d737c4ff1adb009f5f1bf63653bf`.
+The MSI remains unsigned. Previous packages remain intact.
+
+Repeated-save correction (0.2.8, 2026-11-04): the monitor indexes existing eligible
+paths at startup and marks each newly offered path as existing. Subsequent saves
+stay at the current location without placement prompts, including atomic file
+replacement with a changed creation time, renaming a known document, and monitor
+restart without any explicit Keep choice. New Save As copies and completed
+browser download renames still receive their first placement prompt.
+
+Release build: zero warnings/errors. All 119 checks passed: 67 core/filesystem,
+28 WPF/native integration, 8 browser, 10 installer and 6 self-contained runtime.
+Two new filesystem regressions exercise existing files before startup, repeated
+writes, atomic replacement, rename, restart and Save As at a new path. All 479
+embedded MSI files were extracted and SHA-256 verified against the published
+payload. Runtime checks ran against that matching published payload. No existing
+installation, user settings or staff PC was changed. Actual MSI upgrade and real
+Word/Excel/PDF-editor acceptance remain manual checks.
+
+MSI: `artifacts/staff-installer-0.2.8/PrimEx.SmartSave-0.2.8-win-x64.msi`
+(58,159,656 bytes), SHA-256
+`d23a5f79fc8dfdfc8ad09fda1b73a6300c283ad1bb29117ecf8ca98e2efa3f77`.
+Earlier release packages remain intact. The current MSI is unsigned.
 
 Artifact housekeeping (2026-11-03): 46 obsolete release/publish/test-payload targets
 were moved into `artifacts/_ARKIV-VERSIONE-TE-VJETRA`. Recursive deletion was denied
@@ -22,15 +193,16 @@ This was artifact organization only; application tests were not rerun.
 | Check | Result |
 |---|---|
 | Eight-project Release solution build | Pass, zero warnings/errors |
-| Core/filesystem/security/configuration/monitoring executable harness | 65 passed, zero failed |
-| STA WPF + actual native-host process/pipe executable harness | 28 passed, zero failed |
-| Node browser policy and MV3 worker tests | 8 passed, zero failed |
+| Core/filesystem/security/configuration/monitoring executable harness | 78 passed, zero failed |
+| STA WPF + actual native-host process/pipe executable harness | 38 passed, zero failed (0.2.12) |
+| Node browser policy, MV3 worker and editor extension tests | 11 passed, zero failed |
+| VS Code / Visual Studio VSIX structure checks | 2 passed, zero failed |
 | PowerShell parser: Build, Register-NativeHost, Verify | Pass |
 | WiX source XML well-formedness | Pass; this is not WiX schema/ICE validation |
 | Framework-dependent desktop and native-host publish | Pass |
-| Self-contained staff MSI 0.2.7, x64, WiX 6.0.2 build | Pass, 479 embedded payload files |
+| Self-contained staff MSI 0.2.12, x64, WiX 6.0.2 build | Pass, 481 embedded payload files |
 | Installer/source/MSI table and embedded-file hash checks | 10 passed, zero failed |
-| Extracted self-contained staff app runtime/sign-in/first-run checks | 6 passed, zero failed |
+| Self-contained published staff app runtime/sign-in/first-run checks | 9 passed, zero failed; extracted MSI payload hashes match |
 | Full Windows Installer ICE validation | Blocked: Windows Installer Service could not be accessed in restricted account |
 | Actual MSI install/upgrade/uninstall and real sign-in | Not executed; requires Windows pilot/VM |
 | WPF dialog rendered to PNG and visually inspected | Pass; buttons pinned, both choices available |

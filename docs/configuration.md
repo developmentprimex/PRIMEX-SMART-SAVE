@@ -58,11 +58,33 @@ not filenames, source URLs, contents, passwords or full exception messages.
 eligible extensions before enabling it in a pilot. Monitoring is top-level by
 default; `IncludeSubdirectories=true` explicitly includes subfolders of only the
 selected roots. It excludes temporary/hidden/system/reparse/staging files, waits for
-quiet time and an exclusive read, and limits the same path to one prompt per
-30 minutes per agent lifetime. It can report background-generated documents and
+quiet time and an exclusive read, and offers each new path only once per
+monitor session. Existing eligible paths are indexed at startup to suppress
+prompts on edits, including atomic replacement saves. It can report new background-generated documents and
 miss saves while stopped. It cannot distinguish every user save from autosave.
 After a watcher overflow, the status asks for manual review; no broad rescan or
-automatic movement occurs. Watcher queues and fingerprint tables are bounded.
+automatic movement occurs. Pending queues and new-file reports are bounded;
+the existing-path index grows with eligible documents in the selected folders.
+As of 0.2.9, that index is prepared in the background and never enters excluded
+cache/server/staging trees. Recursive selections already covered by an active
+parent watcher do not create another watcher. No periodic work runs when the
+pending queue is empty. The home screen reports active watchers rather than a
+one-to-one count of selected roots. Export diagnostics includes startup indexing
+time, indexed/pending counts, process CPU time and memory without document names.
+
+`Monitoring.IgnoreDevelopmentProjects` defaults true, also for older JSON that
+omits the field. Recognized coding project subtrees are skipped. Set false to
+allow eligible project files again. `Monitoring.ExcludedFolders` defaults `[]`;
+each entry must be an absolute path and excludes the entire subtree regardless
+of the project-detection switch. Both controls are editable in Automatic guidance
+and survive reconfiguration/restart. Project exclusions affect monitoring only,
+including previously queued automatic requests; explicit manual moves remain
+available. See automatic-guidance.md for marker detection and container boundaries.
+
+0.2.11 editor links share IgnoreDevelopmentProjects: turning that switch off
+disables both marker and editor-workspace suppression. Explicit ExcludedFolders
+still applies. Diagnostics includes an active workspace count, never its paths.
+See editor-integrations.md for custom data-directory settings.
 Locked files are retried until released while the agent is running; open Office
 documents may therefore prompt only after closing. Setup validates selected
 folders and never watches whole drives or application cache locations automatically.

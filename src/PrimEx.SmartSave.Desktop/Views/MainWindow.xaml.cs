@@ -32,7 +32,21 @@ public partial class MainWindow : Window
     {
         var picker = new SaveFileDialog { Title = "Export non-sensitive diagnostics", FileName = "PrimEx-diagnostics.json", Filter = "JSON|*.json", OverwritePrompt = true };
         if (picker.ShowDialog(this) != true) return;
-        try { File.WriteAllText(picker.FileName, JsonSerializer.Serialize(new { version = "0.1.0", runtime = Environment.Version.ToString(), os = Environment.OSVersion.VersionString, states = model.Operations.GroupBy(x => x.State).ToDictionary(x => x.Key.ToString(), x => x.Count()) }, new JsonSerializerOptions { WriteIndented = true })); }
+        try
+        {
+            using var process = Process.GetCurrentProcess();
+            File.WriteAllText(picker.FileName, JsonSerializer.Serialize(new
+            {
+                version = typeof(App).Assembly.GetName().Version?.ToString(3),
+                runtime = Environment.Version.ToString(), os = Environment.OSVersion.VersionString,
+                logicalProcessorCount = Environment.ProcessorCount,
+                uptimeSeconds = (DateTime.UtcNow - process.StartTime.ToUniversalTime()).TotalSeconds,
+                processCpuMilliseconds = process.TotalProcessorTime.TotalMilliseconds,
+                workingSetBytes = process.WorkingSet64, privateMemoryBytes = process.PrivateMemorySize64,
+                monitoring = ((App)Application.Current).MonitoringDiagnostics,
+                states = model.Operations.GroupBy(x => x.State).ToDictionary(x => x.Key.ToString(), x => x.Count())
+            }, new JsonSerializerOptions { WriteIndented = true }));
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { model.Status = "Could not write diagnostics to that location."; }
     }
 }

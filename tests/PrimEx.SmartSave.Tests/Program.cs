@@ -268,7 +268,7 @@ try
         Directory.Delete(data, true); File.WriteAllText(data, "not a directory");
         Assert(!choices.Contains(document) && !choices.Remember(document));
     }));
-    await Test("Restarted watcher skips repeated saves only for explicitly remembered files", async () => {
+    await Test("Restarted watcher skips repeated saves for remembered files", async () => {
         string watched = Path.Combine(root, "remembered-watch"); Directory.CreateDirectory(watched);
         string document = Path.Combine(watched, "existing.txt"); File.WriteAllText(document, "first save");
         string memory = Path.Combine(root, "remembered-watch-state"); Assert(new RememberedLocationStore(memory).Remember(document));
@@ -280,10 +280,231 @@ try
         for (int i = 0; i < 60 && !events.Contains(other); i++) await Task.Delay(100);
         Assert(events.Count == 1 && events.Single() == other && File.ReadAllText(document) == "third save");
     });
+    await Test("Existing documents resave in place without guidance, including atomic replacement and rename", async () => {
+        string watched = Path.Combine(root, "existing-resaves"), nested = Path.Combine(watched, "project"); Directory.CreateDirectory(nested);
+        string document = Path.Combine(nested, "existing.docx"), renamed = Path.Combine(nested, "renamed.docx");
+        File.WriteAllText(document, "already saved before startup");
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true; options.Monitoring.QuietSeconds = 1;
+        var events = new ConcurrentQueue<string>();
+        await using (var monitor = new DirectoryMonitor(options, log))
+        {
+            monitor.Candidate += events.Enqueue; monitor.Start();
+            File.WriteAllText(document, "ordinary resave"); await Task.Delay(1600); Assert(events.IsEmpty);
+            string temporary = Path.Combine(nested, "office-save.tmp"); File.WriteAllText(temporary, "atomic resave");
+            File.SetCreationTimeUtc(temporary, DateTime.UtcNow.AddMinutes(1));
+            File.Move(temporary, document, true); await Task.Delay(1600); Assert(events.IsEmpty);
+            Assert(File.ReadAllText(document) == "atomic resave");
+            File.Move(document, renamed); await Task.Delay(1600); Assert(events.IsEmpty);
+            File.AppendAllText(renamed, " after rename");
+            string fresh = Path.Combine(nested, "new.pdf"); File.WriteAllText(fresh, "first save");
+            for (int i = 0; i < 60 && !events.Contains(fresh); i++) await Task.Delay(100);
+            Assert(events.Count == 1 && events.Single() == fresh);
+        }
+        events.Clear();
+        await using (var restarted = new DirectoryMonitor(options, log))
+        {
+            restarted.Candidate += events.Enqueue; restarted.Start();
+            File.AppendAllText(renamed, " after restart");
+            File.AppendAllText(Path.Combine(nested, "new.pdf"), " after restart without a remembered choice");
+            await Task.Delay(1600); Assert(events.IsEmpty);
+        }
+    });
+    await Test("First-save guidance is offered only once per path even when the document is replaced", async () => {
+        string watched = Path.Combine(root, "new-resaves"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.QuietSeconds = 1;
+        var events = new ConcurrentQueue<string>();
+        await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += events.Enqueue; monitor.Start();
+        string document = Path.Combine(watched, "new.xlsx"); File.WriteAllText(document, "first save");
+        for (int i = 0; i < 60 && !events.Contains(document); i++) await Task.Delay(100);
+        Assert(events.Count == 1 && events.Single() == document);
+        File.AppendAllText(document, " resaved"); await Task.Delay(1600); Assert(events.Count == 1);
+        string temporary = Path.Combine(watched, "replacement.tmp"); File.WriteAllText(temporary, "replacement save");
+        File.SetCreationTimeUtc(temporary, DateTime.UtcNow.AddMinutes(1)); File.Move(temporary, document, true);
+        await Task.Delay(1600);
+        Assert(events.Count == 1 && File.ReadAllText(document) == "replacement save");
+        string saveAs = Path.Combine(watched, "save-as.xlsx"); File.Copy(document, saveAs);
+        for (int i = 0; i < 60 && !events.Contains(saveAs); i++) await Task.Delay(100);
+        Assert(events.Count == 2 && events.Contains(saveAs));
+    });
     await Test("Disabled watcher has no filesystem subscriptions", async () => {
         var options = new AppOptions(); options.Monitoring.Folders = [root];
         int count = 0; await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += _ => Interlocked.Increment(ref count); monitor.Start();
         File.WriteAllText(Path.Combine(root, "disabled.pdf"), "test"); await Task.Delay(1100); Assert(count == 0);
+    });
+    await Test("Startup index preserves scope and exclusions and supports cancellation", async () => {
+        string watched = Path.Combine(root, "indexed-policy"), nested = Path.Combine(watched, "project"), cache = Path.Combine(watched, "node_modules"), company = Path.Combine(watched, "company");
+        foreach (string folder in new[] { watched, nested, cache, company }) Directory.CreateDirectory(folder);
+        string top = Path.Combine(watched, "top.pdf"), child = Path.Combine(nested, "child.docx");
+        foreach (string path in new[] { top, child, Path.Combine(cache, "ignored.pdf"), Path.Combine(company, "ignored.pdf"), Path.Combine(watched, "unfinished.crdownload"), Path.Combine(watched, "~$lock.docx") }) File.WriteAllText(path, "sample");
+        string hidden = Path.Combine(watched, "hidden.pdf"); File.WriteAllText(hidden, "hidden"); File.SetAttributes(hidden, FileAttributes.Hidden);
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.CompanyServer.ApprovedRoots = [company];
+        var policy = new EligibleFilePolicy(options);
+        Assert(policy.EnumerateExistingFiles(watched).SequenceEqual(new[] { top }));
+        options.Monitoring.IncludeSubdirectories = true;
+        Assert(policy.EnumerateExistingFiles(watched).ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(new[] { top, child }));
+        using var cancelled = new CancellationTokenSource();
+        using var enumerator = policy.EnumerateExistingFiles(watched, cancelled.Token).GetEnumerator(); Assert(enumerator.MoveNext());
+        cancelled.Cancel(); await Throws<OperationCanceledException>(() => Sync(() => enumerator.MoveNext()));
+    });
+    await Test("Overlapping recursive roots use one watcher and ignored events do not enter the pending queue", async () => {
+        string watched = Path.Combine(root, "overlapping"), nested = Path.Combine(watched, "project"); Directory.CreateDirectory(nested);
+        string existing = Path.Combine(nested, "existing.pdf"); File.WriteAllText(existing, "before startup");
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.IncludeSubdirectories = true; options.Monitoring.QuietSeconds = 1;
+        options.Monitoring.Folders = [nested, watched.Replace('\\', '/')];
+        var events = new ConcurrentQueue<string>(); await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += events.Enqueue;
+        await monitor.StartAsync(); Assert(monitor.ActiveFolderCount == 1 && monitor.IndexedFileCount == 1);
+        File.AppendAllText(existing, " resaved");
+        for (int i = 0; i < 50; i++) File.WriteAllText(Path.Combine(watched, $"partial-{i}.tmp"), "ignored");
+        await Task.Delay(500); Assert(monitor.PendingFileCount == 0 && events.IsEmpty);
+        string fresh = Path.Combine(nested, "new.pdf"); File.WriteAllText(fresh, "first save");
+        for (int i = 0; i < 60 && !events.Contains(fresh); i++) await Task.Delay(100);
+        Assert(events.Count == 1 && events.Single() == fresh);
+    });
+    await Test("Async startup and concurrent disposal do not block the caller or leak watchers", async () => {
+        string watched = Path.Combine(root, "async-startup"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched];
+        using var blocking = new BlockingStartupLog();
+        var monitor = new DirectoryMonitor(options, blocking);
+        Task starting = monitor.StartAsync();
+        try
+        {
+            await blocking.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert(!starting.IsCompleted && ReferenceEquals(starting, monitor.StartAsync()));
+            Task firstStop = monitor.DisposeAsync().AsTask(), secondStop = monitor.DisposeAsync().AsTask();
+            Assert(!firstStop.IsCompleted && ReferenceEquals(firstStop, secondStop));
+            blocking.Release.Set();
+            await Task.WhenAll(starting, firstStop, secondStop).WaitAsync(TimeSpan.FromSeconds(5));
+            bool rejected = false; try { await monitor.StartAsync(); } catch (ObjectDisposedException) { rejected = true; } Assert(rejected);
+        }
+        finally { blocking.Release.Set(); await monitor.DisposeAsync(); }
+    });
+    await Test("Coding project markers suppress the entire project while neighboring documents remain eligible", () => Sync(() => {
+        string watched = Path.Combine(root, "coding-scope"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true;
+        foreach (string marker in new[] { ".git", ".vscode", ".vs", "package.json", "pyproject.toml", "app.csproj", "workspace.code-workspace" })
+        {
+            string project = Path.Combine(watched, "project-" + marker.Replace('.', '_')), nested = Path.Combine(project, "src"); Directory.CreateDirectory(nested);
+            string markerPath = Path.Combine(project, marker);
+            if (marker is ".git" or ".vscode" or ".vs") Directory.CreateDirectory(markerPath); else File.WriteAllText(markerPath, "project marker");
+            var policy = new EligibleFilePolicy(options);
+            foreach (string name in new[] { "source.cs", "settings.json", "README.md", "image.png", "document.pdf" })
+            {
+                string path = Path.Combine(nested, name); File.WriteAllText(path, "project asset");
+                Assert(!policy.IsEligible(path) && policy.IsSuppressed(path));
+            }
+            Assert(!policy.EnumerateExistingFiles(watched).Any(path => PathRules.IsWithin(path, project)));
+            policy.ObserveChange(Path.Combine(project, "node_modules", "dependency", "package.json"));
+            Assert(!policy.CanBeEligible(Path.Combine(nested, "source.cs")));
+            // Selecting a subfolder directly still recognizes its project ancestor.
+            options.Monitoring.Folders = [nested]; Assert(!new EligibleFilePolicy(options).IsEligible(Path.Combine(nested, "document.pdf")));
+            options.Monitoring.Folders = [watched];
+        }
+        string worktree = Path.Combine(watched, "worktree"); Directory.CreateDirectory(worktree); File.WriteAllText(Path.Combine(worktree, ".git"), "gitdir: elsewhere");
+        string worktreeFile = Path.Combine(worktree, "new.txt"); File.WriteAllText(worktreeFile, "worktree document"); Assert(!new EligibleFilePolicy(options).IsEligible(worktreeFile));
+        string ordinary = Path.Combine(watched, "normal.pdf"); File.WriteAllText(ordinary, "normal document"); Assert(new EligibleFilePolicy(options).IsEligible(ordinary));
+        options.Monitoring.IgnoreDevelopmentProjects = false; Assert(new EligibleFilePolicy(options).IsEligible(worktreeFile));
+        var projects = new DevelopmentProjectPolicy();
+        Assert(!projects.IsProject(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) && !projects.IsProject(Path.GetTempPath()));
+        foreach (var known in KnownFolderService.GetSuggestions()) Assert(!projects.IsProject(known.Path));
+    }));
+    await Test("Explicit excluded folders use path boundaries and persist independently of project detection", () => Sync(() => {
+        string watched = Path.Combine(root, "excluded-scope"), excluded = Path.Combine(watched, "My Project"), sibling = excluded + "-other";
+        Directory.CreateDirectory(Path.Combine(excluded, "src")); Directory.CreateDirectory(sibling);
+        string ignored = Path.Combine(excluded, "src", "readme.md"), ordinary = Path.Combine(sibling, "report.pdf"); File.WriteAllText(ignored, "code"); File.WriteAllText(ordinary, "document");
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true; options.Monitoring.IgnoreDevelopmentProjects = false;
+        options.Monitoring.ExcludedFolders = [excluded.ToUpperInvariant().Replace('\\', '/')];
+        var policy = new EligibleFilePolicy(options);
+        Assert(!policy.CanBeEligible(ignored) && !policy.IsEligible(ignored) && policy.IsEligible(ordinary));
+        Assert(policy.EnumerateExistingFiles(watched).SequenceEqual(new[] { ordinary }));
+        string config = Path.Combine(root, "exclusions.json"); File.WriteAllText(config, System.Text.Json.JsonSerializer.Serialize(options));
+        var loaded = AppOptions.Load(config); Assert(!loaded.Monitoring.IgnoreDevelopmentProjects && loaded.Monitoring.ExcludedFolders.SequenceEqual(options.Monitoring.ExcludedFolders));
+        options.Monitoring.ExcludedFolders = ["relative"]; Assert(options.Validate().Count > 0);
+        options.Monitoring.ExcludedFolders = [""]; Assert(options.Validate().Count > 0);
+        options.Monitoring.ExcludedFolders = null!; Assert(options.Validate().Count > 0);
+    }));
+    await Test("Old configuration gains coding-project protection without rewriting its settings", () => Sync(() => {
+        var json = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(new AppOptions()))!;
+        json["Monitoring"]!.AsObject().Remove("ExcludedFolders"); json["Monitoring"]!.AsObject().Remove("IgnoreDevelopmentProjects");
+        string config = Path.Combine(root, "old-project-settings.json"), original = json.ToJsonString(); File.WriteAllText(config, original);
+        var loaded = AppOptions.Load(config); Assert(loaded.Monitoring.IgnoreDevelopmentProjects && loaded.Monitoring.ExcludedFolders.Length == 0 && File.ReadAllText(config) == original);
+    }));
+    await Test("Projects initialized while monitoring is running never prompt for code or assets", async () => {
+        string watched = Path.Combine(root, "live-projects"), git = Path.Combine(watched, "git-project"), manifest = Path.Combine(watched, "node-project");
+        Directory.CreateDirectory(git); Directory.CreateDirectory(manifest);
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true; options.Monitoring.QuietSeconds = 1;
+        var events = new ConcurrentQueue<string>(); await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += events.Enqueue; await monitor.StartAsync();
+        File.WriteAllText(Path.Combine(git, "README.md"), "created just before git init"); Directory.CreateDirectory(Path.Combine(git, ".git"));
+        File.WriteAllText(Path.Combine(git, "new.cs"), "source"); File.WriteAllText(Path.Combine(git, "asset.png"), "asset");
+        File.WriteAllText(Path.Combine(manifest, "first.json"), "before manifest"); File.WriteAllText(Path.Combine(manifest, "package.json"), "{}");
+        File.WriteAllText(Path.Combine(manifest, "report.pdf"), "project document");
+        await Task.Delay(1800); Assert(events.IsEmpty);
+        string outside = Path.Combine(watched, "normal.pdf"); File.WriteAllText(outside, "normal document");
+        for (int i = 0; i < 60 && !events.Contains(outside); i++) await Task.Delay(100);
+        Assert(events.Count == 1 && events.Single() == outside);
+    });
+    await Test("Editor leases handle multiple windows, path boundaries, close and invalid records", () => Sync(() => {
+        string data = Path.Combine(root, "editor-registry"), first = Path.Combine(root, "unmarked-editor-one"), second = Path.Combine(root, "unmarked-editor-two");
+        Directory.CreateDirectory(first); Directory.CreateDirectory(second);
+        using var registry = new EditorWorkspaceRegistry(data);
+        void Publish(string name, string[] folders, string editor = "VSCode", DateTimeOffset? updated = null, int? pid = null, int version = 1)
+        {
+            File.WriteAllText(Path.Combine(data, name + ".json"), System.Text.Json.JsonSerializer.Serialize(new { version, editor, processId = pid ?? Environment.ProcessId, updatedUtc = updated ?? DateTimeOffset.UtcNow, folders })); registry.Refresh();
+        }
+        Publish("code", [first]); Publish("studio", [second], "VisualStudio");
+        Assert(registry.ActiveWorkspaceCount == 2 && registry.Contains(Path.Combine(first, "src", "new.json")) && registry.Contains(second.ToUpperInvariant()));
+        Assert(!registry.Contains(first + "-other\\file.pdf"));
+        File.Delete(Path.Combine(data, "code.json")); registry.Refresh(); Assert(!registry.Contains(first) && registry.Contains(second));
+        Publish("studio", [second], "VisualStudio", DateTimeOffset.UtcNow.AddMinutes(-2)); Assert(!registry.Contains(second));
+        Publish("studio", [second], "VisualStudio", DateTimeOffset.UtcNow.AddMinutes(1)); Assert(!registry.Contains(second));
+        Publish("studio", [second], "VisualStudio", pid: int.MaxValue); Assert(!registry.Contains(second));
+        Publish("studio", [second], "UnknownEditor"); Assert(!registry.Contains(second));
+        Publish("studio", [second], version: 2); Assert(!registry.Contains(second));
+        Publish("studio", ["relative"]); Assert(!registry.Contains(second));
+        Publish("studio", [Path.GetPathRoot(root)!]); Assert(!registry.Contains(second));
+        File.WriteAllText(Path.Combine(data, "studio.json"), "{damaged"); registry.Refresh(); Assert(registry.ActiveWorkspaceCount == 0);
+        File.WriteAllText(Path.Combine(data, "studio.json"), new string('x', 65537)); registry.Refresh(); Assert(registry.ActiveWorkspaceCount == 0);
+        Publish("studio", [second], "VisualStudio"); Assert(registry.Contains(second));
+    }));
+    await Test("Registry notices atomic publisher updates without restarting the monitor", async () => {
+        string data = Path.Combine(root, "editor-atomic"), workspace = Path.Combine(root, "editor-atomic-workspace"); Directory.CreateDirectory(workspace);
+        using var registry = new EditorWorkspaceRegistry(data); Assert(!registry.Contains(workspace));
+        string temporary = Path.Combine(data, "lease.tmp"), final = Path.Combine(data, "lease.json");
+        File.WriteAllText(temporary, System.Text.Json.JsonSerializer.Serialize(new { version = 1, editor = "VSCode", processId = Environment.ProcessId, updatedUtc = DateTimeOffset.UtcNow, folders = new[] { workspace } }));
+        File.Move(temporary, final);
+        for (int i = 0; i < 40 && !registry.Contains(workspace); i++) await Task.Delay(50);
+        Assert(registry.Contains(workspace)); File.Delete(final);
+        for (int i = 0; i < 40 && registry.Contains(workspace); i++) await Task.Delay(50);
+        Assert(!registry.Contains(workspace));
+    });
+    await Test("Open unmarked editor workspaces suppress new files and closing restores guidance", async () => {
+        string watched = Path.Combine(root, "editor-live"), project = Path.Combine(watched, "new-empty-project"), data = Path.Combine(root, "editor-live-leases"); Directory.CreateDirectory(project);
+        using var registry = new EditorWorkspaceRegistry(data);
+        string lease = Path.Combine(data, "code.json");
+        File.WriteAllText(lease, System.Text.Json.JsonSerializer.Serialize(new { version = 1, editor = "VSCode", processId = Environment.ProcessId, updatedUtc = DateTimeOffset.UtcNow, folders = new[] { project } })); registry.Refresh();
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true; options.Monitoring.QuietSeconds = 1;
+        var policy = new EligibleFilePolicy(options, registry); Assert(!policy.CanBeEligible(Path.Combine(project, "new.txt")));
+        options.Monitoring.IgnoreDevelopmentProjects = false; Assert(policy.CanBeEligible(Path.Combine(project, "new.txt"))); options.Monitoring.IgnoreDevelopmentProjects = true;
+        var events = new ConcurrentQueue<string>(); await using var monitor = new DirectoryMonitor(options, log, editorWorkspaces: registry); monitor.Candidate += events.Enqueue; await monitor.StartAsync();
+        foreach (string name in new[] { "asset.png", "README.md", "settings.json", "report.pdf" }) File.WriteAllText(Path.Combine(project, name), "editor asset");
+        await Task.Delay(1600); Assert(events.IsEmpty && monitor.PendingFileCount == 0);
+        File.Delete(lease); registry.Refresh();
+        string afterClose = Path.Combine(project, "after-close.pdf"); File.WriteAllText(afterClose, "ordinary file after editor close");
+        for (int i = 0; i < 60 && !events.Contains(afterClose); i++) await Task.Delay(100);
+        Assert(events.Count == 1 && events.Single() == afterClose);
+    });
+    await Test("Both editor publishers produce leases readable by the desktop registry", async () => {
+        string data = Path.Combine(root, "editor-publishers"), workspace = Path.Combine(root, "publisher-empty-project"); Directory.CreateDirectory(workspace);
+        using var registry = new EditorWorkspaceRegistry(Path.Combine(data, "editor-workspaces"));
+        var start = new System.Diagnostics.ProcessStartInfo("node") { UseShellExecute = false, CreateNoWindow = true };
+        start.ArgumentList.Add(Path.GetFullPath("tests/editors/publish-lease.cjs")); start.ArgumentList.Add(Path.Combine(data, "editor-workspaces")); start.ArgumentList.Add(workspace);
+        using var publisher = System.Diagnostics.Process.Start(start)!;
+        for (int i = 0; i < 100 && !registry.Contains(workspace); i++) { Assert(!publisher.HasExited); await Task.Delay(50); }
+        Assert(registry.Contains(workspace));
+        File.WriteAllText(Path.Combine(data, "editor-workspaces", "stop"), "done"); await publisher.WaitForExitAsync(); registry.Refresh(); Assert(publisher.ExitCode == 0 && !registry.Contains(workspace));
+        var studio = new PrimEx.SmartSave.VisualStudio.WorkspaceLeasePublisher(data);
+        studio.SetFolders([workspace]); registry.Refresh(); Assert(registry.Contains(workspace));
+        studio.SetFolders([], generation: 10); studio.SetFolders([workspace], generation: 9); registry.Refresh(); Assert(!registry.Contains(workspace));
+        studio.Dispose();
     });
     await Test("Recursive scope stays inside selected folders and excludes partial downloads", () => Sync(() => {
         string watched = Path.Combine(root, "scope"); string nested = Path.Combine(watched, "subfolder"); Directory.CreateDirectory(nested);
@@ -313,4 +534,16 @@ return failed == 0 ? 0 : 1;
 sealed class FakeResolver : IPathResolver
 {
     public string Resolve(string path) => PathRules.NormalizeAbsolute(path.StartsWith("P:", StringComparison.OrdinalIgnoreCase) ? @"\\test\share" + path[2..] : path);
+}
+
+sealed class BlockingStartupLog : IEventLog, IDisposable
+{
+    public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public ManualResetEventSlim Release { get; } = new();
+    public void Write(string eventName, Guid? operationId = null, string? code = null)
+    {
+        if (eventName != "MonitoringStarted") return;
+        Entered.TrySetResult(); Release.Wait();
+    }
+    public void Dispose() => Release.Dispose();
 }

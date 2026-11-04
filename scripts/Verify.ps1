@@ -12,7 +12,7 @@ try {
         & dotnet run --project $taskTests -c Release --no-build
         if ($LASTEXITCODE -ne 0) { throw ('Tests failed: ' + $taskTests) }
     }
-    & node --test tests/browser/policy.test.mjs tests/browser/worker.test.mjs
+    & node --test tests/browser/policy.test.mjs tests/browser/worker.test.mjs tests/editors/workspace-link.test.cjs tests/editors/extension.test.cjs
     if ($LASTEXITCODE -ne 0) { throw 'Browser tests failed.' }
     & python -m unittest discover -s tests/installer -p test_staff_package.py -v
     if ($LASTEXITCODE -ne 0) { throw 'Installer source tests failed.' }

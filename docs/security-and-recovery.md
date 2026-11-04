@@ -1,5 +1,12 @@
 # Security and recovery
 
+The 0.2.11 editor links write current-user local workspace leases only to suppress
+automatic placement. They cannot enable monitoring, authorize transfers or execute
+commands in the agent. The reader validates size/count/expiry, local path boundaries
+and a live process in the same session. Editor process IDs are not authentication
+against malicious same-user software. No document content or network traffic is
+involved. Workspace paths are local user state and excluded from MSI/diagnostics.
+
 Run at the signed-in user's privilege level. Native hosts must be registered with
 exact approved extension origins. The host checks the browser-provided origin
 argument against configuration, and the agent repeats schema/origin/path checks.

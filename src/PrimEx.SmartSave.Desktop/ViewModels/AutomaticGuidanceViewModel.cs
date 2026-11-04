@@ -16,12 +16,14 @@ public sealed class WatchedFolder : ObservableObject
 public sealed class AutomaticGuidanceViewModel : ObservableObject
 {
     private readonly AppOptions original;
-    private string roots, extensions, error = "";
-    private bool enabled, includeSubdirectories, startWithWindows, allFileTypes;
+    private string roots, extensions, excludedFolders, error = "";
+    private bool enabled, includeSubdirectories, startWithWindows, allFileTypes, ignoreDevelopmentProjects;
     public ObservableCollection<WatchedFolder> Folders { get; } = [];
     public bool Enabled { get => enabled; set => Set(ref enabled, value); }
     public bool IncludeSubdirectories { get => includeSubdirectories; set => Set(ref includeSubdirectories, value); }
     public bool StartWithWindows { get => startWithWindows; set => Set(ref startWithWindows, value); }
+    public bool IgnoreDevelopmentProjects { get => ignoreDevelopmentProjects; set => Set(ref ignoreDevelopmentProjects, value); }
+    public string ExcludedFolders { get => excludedFolders; set => Set(ref excludedFolders, value); }
     public bool AllFileTypes { get => allFileTypes; set { Set(ref allFileTypes, value); Changed(nameof(CustomFileTypesEnabled)); } }
     public bool CustomFileTypesEnabled => !AllFileTypes;
     public string ApprovedRoots { get => roots; set => Set(ref roots, value); }
@@ -33,6 +35,8 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         enabled = options.Monitoring.Enabled;
         includeSubdirectories = options.Monitoring.IncludeSubdirectories;
         startWithWindows = options.StartWithWindows;
+        ignoreDevelopmentProjects = options.Monitoring.IgnoreDevelopmentProjects;
+        excludedFolders = string.Join(Environment.NewLine, options.Monitoring.ExcludedFolders);
         roots = string.Join(Environment.NewLine, options.CompanyServer.ApprovedRoots);
         allFileTypes = MonitoringFileTypes.IncludesAll(options.Monitoring.Extensions);
         extensions = allFileTypes ? ".pdf, .docx, .xlsx, .png, .jpg, .jpeg, .zip" : string.Join(", ", options.Monitoring.Extensions);
@@ -56,6 +60,8 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         result.StartWithWindows = StartWithWindows;
         result.GuidanceSetupCompleted = true;
         result.Monitoring.IncludeSubdirectories = IncludeSubdirectories;
+        result.Monitoring.IgnoreDevelopmentProjects = IgnoreDevelopmentProjects;
+        result.Monitoring.ExcludedFolders = ExcludedFolders.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(PathRules.NormalizeAbsolute).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         result.Monitoring.Folders = Folders.Where(x => x.Selected).Select(x => x.Path).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         result.Monitoring.Extensions = AllFileTypes ? ["*"] : Extensions.Split([',', ';', ' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).Distinct().ToArray();
         if (!MonitoringFileTypes.IsValid(result.Monitoring.Extensions))

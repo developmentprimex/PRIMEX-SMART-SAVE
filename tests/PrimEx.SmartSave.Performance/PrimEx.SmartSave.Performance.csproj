@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework></PropertyGroup>
+  <ItemGroup Condition="'$(BenchmarkAssemblyDir)' == ''">
+    <ProjectReference Include="../../src/PrimEx.SmartSave.Monitoring/PrimEx.SmartSave.Monitoring.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(BenchmarkAssemblyDir)' != ''">
+    <Reference Include="PrimEx.SmartSave.Core"><HintPath>$(BenchmarkAssemblyDir)/PrimEx.SmartSave.Core.dll</HintPath></Reference>
+    <Reference Include="PrimEx.SmartSave.Monitoring"><HintPath>$(BenchmarkAssemblyDir)/PrimEx.SmartSave.Monitoring.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

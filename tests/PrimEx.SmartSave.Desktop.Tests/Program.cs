@@ -85,6 +85,18 @@ internal static class Program
                 Assert(options.StartWithWindows && !options.GuidanceSetupCompleted);
                 await Task.CompletedTask;
             });
+            await Test("Setup persists coding-project protection and explicit excluded folders", async () => {
+                string excluded = Path.Combine(root, "My Projects");
+                var model = new AutomaticGuidanceViewModel(options, []);
+                Assert(model.IgnoreDevelopmentProjects && model.ExcludedFolders == "");
+                model.ExcludedFolders = excluded + Environment.NewLine + excluded.ToUpperInvariant();
+                var updated = model.CreateOptions(); Assert(updated.Monitoring.IgnoreDevelopmentProjects && updated.Monitoring.ExcludedFolders.Single() == excluded);
+                string settings = Path.Combine(root, "project-setup.json"); File.WriteAllText(settings, JsonSerializer.Serialize(updated));
+                var reopened = new AutomaticGuidanceViewModel(AppOptions.Load(settings), []); Assert(reopened.ExcludedFolders == excluded);
+                reopened.IgnoreDevelopmentProjects = false; Assert(!reopened.CreateOptions().Monitoring.IgnoreDevelopmentProjects && reopened.CreateOptions().Monitoring.ExcludedFolders.Single() == excluded);
+                Assert(options.Monitoring.ExcludedFolders.Length == 0 && options.Monitoring.IgnoreDevelopmentProjects);
+                await Task.CompletedTask;
+            });
             await Test("Setup defaults to all file types and supports an explicit custom filter", async () => {
                 var model = new AutomaticGuidanceViewModel(options, []);
                 Assert(model.AllFileTypes && !model.CustomFileTypesEnabled);
@@ -171,6 +183,102 @@ internal static class Program
                 Assert(((TextBlock)dialog.FindName("DownloadsWarning")).Visibility == Visibility.Collapsed);
                 dialog.Close(); await Task.CompletedTask;
             });
+            await Test("Queued monitoring requests in projects or excluded folders do not open a placement dialog", async () => {
+                string project = Path.Combine(root, "queued-project"), excluded = Path.Combine(root, "queued-excluded"), linked = Path.Combine(root, "queued-linked-editor");
+                Directory.CreateDirectory(Path.Combine(project, ".vscode")); Directory.CreateDirectory(excluded);
+                Directory.CreateDirectory(linked);
+                using var registry = new EditorWorkspaceRegistry(Path.Combine(root, "queued-editor-leases"));
+                File.WriteAllText(Path.Combine(root, "queued-editor-leases", "code.json"), JsonSerializer.Serialize(new { version = 1, editor = "VSCode", processId = Environment.ProcessId, updatedUtc = DateTimeOffset.UtcNow, folders = new[] { linked } })); registry.Refresh();
+                var protectedOptions = new AppOptions(); protectedOptions.Monitoring.ExcludedFolders = [excluded];
+                var owner = new Window { Width = 400, Height = 200 }; owner.Show();
+                var previousOwner = Application.Current.MainWindow; Application.Current.MainWindow = owner;
+                bool unexpected = false;
+                var safety = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+                safety.Tick += (_, _) => {
+                    foreach (var prompt in Application.Current.Windows.OfType<PostSaveDialog>().Where(x => x.IsVisible).ToArray()) { unexpected = true; prompt.Close(); }
+                };
+                safety.Start();
+                try
+                {
+                    var protectedSelector = new WpfDestinationSelector(servers, resolver, new FixedCompanyFolderPicker(root), options: protectedOptions, editorWorkspaces: registry);
+                    foreach (string folder in new[] { project, excluded, linked })
+                    {
+                        string file = Path.Combine(folder, "README.md"); File.WriteAllText(file, "project file");
+                        Assert(await protectedSelector.SelectAsync(new(Guid.NewGuid(), file, "README.md", "Monitoring", DateTimeOffset.UtcNow)) == null);
+                        Assert(!unexpected && File.Exists(file));
+                    }
+                }
+                finally { safety.Stop(); owner.Close(); Application.Current.MainWindow = previousOwner; }
+            });
+            await Test("Editor connection screen renders both editor actions and manual paths with spaces", async () => {
+                var dialog = new EditorIntegrationDialog(); dialog.Show(); dialog.UpdateLayout();
+                Assert(((Button)dialog.FindName("CodeButton")).IsEnabled && ((Button)dialog.FindName("StudioButton")).IsEnabled);
+                string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
+                var bitmap = new RenderTargetBitmap((int)dialog.ActualWidth, (int)dialog.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(dialog);
+                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using (var stream = File.Create(Path.Combine(output, "editor-connections.png"))) encoder.Save(stream);
+                dialog.Close();
+                var start = EditorIntegrationService.CreateVSCodeInstallStart(@"C:\Program Files\Microsoft VS Code\bin\code.cmd", @"C:\Tools With Spaces\link.vsix");
+                Assert(!start.UseShellExecute && start.CreateNoWindow && start.Arguments.Contains("--install-extension \"C:\\Tools With Spaces\\link.vsix\""));
+                await Task.CompletedTask;
+            });
+            foreach (string mainState in new[] { "Hidden", "Minimized" })
+            foreach (string flow in new[] { "Keep", "Move", "Browser" })
+            {
+                await Test($"{flow} prompt leaves the main queue {mainState.ToLowerInvariant()}", async () => {
+                    var main = new Window { Title = "Main queue must stay out of the way", Width = 650, Height = 400 };
+                    main.Show(); if (mainState == "Hidden") main.Hide(); else main.WindowState = WindowState.Minimized;
+                    var previous = Application.Current.MainWindow; Application.Current.MainWindow = main;
+                    string company = Path.Combine(root, "standalone-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(company);
+                    var companyService = new ServerFolderService(new() { ApprovedRoots = [company], DiscoverMappedDrives = false }, resolver);
+                    var remembered = new RememberedLocationStore(Path.Combine(company, "choices"));
+                    bool promptSeen = false, companySeen = false, timedOut = false, mainRestored = false, invalidPresentation = false;
+                    var elapsed = Stopwatch.StartNew(); var driver = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+                    driver.Tick += (_, _) => {
+                        if (mainState == "Hidden" ? main.IsVisible : main.WindowState != WindowState.Minimized) mainRestored = true;
+                        var dialogs = Application.Current.Windows.OfType<Window>().Where(x => x is PostSaveDialog or CompanyMoveDialog or SaveDialog && x.IsVisible).ToArray();
+                        if (elapsed.Elapsed > TimeSpan.FromSeconds(10)) { timedOut = true; foreach (var window in dialogs) window.Close(); return; }
+                        foreach (var window in dialogs)
+                        {
+                            if (window.Owner != null || !window.ShowInTaskbar || window.WindowStartupLocation != WindowStartupLocation.CenterScreen) invalidPresentation = true;
+                            if (window is PostSaveDialog prompt)
+                            {
+                                if (!promptSeen)
+                                {
+                                    promptSeen = true;
+                                    if (flow == "Keep")
+                                    {
+                                        if (mainState == "Hidden")
+                                        {
+                                            prompt.UpdateLayout();
+                                            string preview = Path.GetFullPath("artifacts/verification/standalone-post-save.png");
+                                            var bitmap = new RenderTargetBitmap((int)prompt.ActualWidth, (int)prompt.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(prompt);
+                                            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var stream = File.Create(preview); encoder.Save(stream);
+                                        }
+                                        ((Button)prompt.FindName("KeepButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                    }
+                                    else ((Button)prompt.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                }
+                                else if (((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Visible)
+                                    ((Button)prompt.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            }
+                            else if (window is CompanyMoveDialog move && !companySeen && ((Button)move.FindName("MoveButton")).IsEnabled)
+                            { companySeen = true; ((Button)move.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+                            else if (window is SaveDialog save) { promptSeen = true; save.Close(); }
+                        }
+                    };
+                    driver.Start();
+                    try
+                    {
+                        var selector = new WpfDestinationSelector(companyService, resolver, new FixedCompanyFolderPicker(company), remembered);
+                        var selected = await selector.SelectAsync(request with { Integration = flow == "Browser" ? "Browser" : "Monitoring" });
+                        Assert(!timedOut && promptSeen && !mainRestored && !invalidPresentation && File.Exists(source));
+                        Assert(mainState == "Hidden" ? !main.IsVisible : main.WindowState == WindowState.Minimized);
+                        if (flow == "Move") Assert(companySeen && selected?.Folder == company);
+                        else Assert(selected == null && remembered.Contains(source) == (flow == "Keep"));
+                    }
+                    finally { driver.Stop(); main.Close(); Application.Current.MainWindow = previous; }
+                });
+            }
             foreach (string scenario in new[] { "Move", "CancelFolder", "Keep", "Close", "Escape", "CancelWarning", "WarningToServer" })
             {
                 await Test("Post-save " + scenario + " does not repeat destination-type choice", async () => {
@@ -195,6 +303,7 @@ internal static class Program
                         if (!promptSeen && Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt)
                         {
                             promptSeen = true;
+                            Assert(prompt.Owner == owner && !prompt.ShowInTaskbar);
                             Assert(((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Collapsed && !prompt.KeepChosen);
                             if (scenario == "Keep")
                             {
@@ -290,6 +399,19 @@ internal static class Program
                 model.FileName = "..\\escape"; Assert(!await model.ValidateAsync());
             });
             var selector = new FixedSelector(root);
+            await Test("Deferred startup history preserves pending work and interrupted-transfer recovery", async () => {
+                var history = new OperationStore(Path.Combine(root, "deferred-history"));
+                var pending = new PendingOperation(request with { Id = Guid.NewGuid() });
+                var interrupted = new PendingOperation(request with { Id = Guid.NewGuid() }, OperationState.Transferring);
+                history.Save(pending); history.Save(interrupted);
+                var deferred = new QueueViewModel(history, transfer, selector, logger, loadHistory: false);
+                Assert(!deferred.IsReady && deferred.Operations.Count == 0);
+                await deferred.InitializeAsync();
+                Assert(deferred.IsReady && deferred.Operations.Count == 2);
+                Assert(deferred.Operations.Single(x => x.Request.Id == pending.Request.Id).State == OperationState.Pending);
+                Assert(deferred.Operations.Single(x => x.Request.Id == interrupted.Request.Id).State == OperationState.NeedsReview);
+                await deferred.InitializeAsync(); Assert(deferred.Operations.Count == 2);
+            });
             var queue = new QueueViewModel(new OperationStore(Path.Combine(root, "operations")), transfer, selector, logger);
             await Test("Queue persists manual move, prevents duplicate transfer", async () => {
                 queue.Enqueue(request); Assert(!queue.Enqueue(request));

@@ -1,6 +1,6 @@
 # PrimEx Smart Save — instalimi për stafin
 
-1. Kopjo `PrimEx.SmartSave-0.2.7-win-x64.msi` në kompjuterin e punonjësit.
+1. Kopjo `PrimEx.SmartSave-0.2.12-win-x64.msi` në kompjuterin e punonjësit.
 2. Nëse është hapur versioni i vjetër, mbylle nga ikona pranë orës me **Exit**.
 3. Hape MSI-në me llogarinë normale të punonjësit dhe përfundo instalimin.
    .NET është i përfshirë; nuk duhet instaluar veçmas. Paketa është për Windows x64.
@@ -24,7 +24,7 @@ Konfigurimi bëhet një herë për secilën llogari. Lejet ekzistuese të server
 mbeten në fuqi. Dokumentet nuk lëvizen pa konfirmim. Aplikacioni sugjeron vendosjen
 pas ruajtjes; ndërhyrja para Save në Word/Excel nuk është implementuar ende.
 
-Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.7
+Në kompjuterët me version të vjetër, mbylleni me Exit dhe instaloni 0.2.12
 me të njëjtën llogari Windows. Folderët dhe serveri ruhen. Lista standarde e
 vjetër e formateve kalon automatikisht në të gjitha llojet; filtrat e personalizuar
 ruhen dhe mund të ndryshohen te Automatic guidance. Për test shkarkoni një file
@@ -42,13 +42,43 @@ provë dhe kopje jo të rëndësishme. Dokumentet e rëndësishme të punës rua
 Kliko **Vazhdo me Downloads** për ta mbajtur skedarin lokalisht, ose **Kthehu**
 për të zgjedhur Files PX. Zgjedhja mbahet mend vetëm pas konfirmimit.
 
-Zgjedhja **Downloads** mbahet mend për ruajtjet e tjera të
-të njëjtit skedar, edhe pas rinisjes. **Save** vazhdon ta ruajë dokumentin aty ku
-është hapur. **Save As** me emër ose dosje tjetër trajtohet si skedar i ri.
+Në versionin 0.2.8, kur riruani një dokument ekzistues me **Save**, nuk shfaqet
+pyetja për vendndodhjen. Dokumenti ruhet aty ku është hapur, edhe pas rinisjes së
+programit dhe kur aplikacioni e zëvendëson skedarin gjatë ruajtjes. Kjo vlen edhe
+nëse pyetja e parë është mbyllur pa zgjedhur Downloads. **Save As** me emër ose
+dosje tjetër krijon një skedar të ri dhe mund të shfaqë pyetjen e parë.
 Ndryshimet në kopje lokale nuk dërgohen automatikisht te kopja në server.
+
+Versioni 0.2.9 optimizon hapjen. Dritarja hapet para leximit të historisë dhe
+përgatitjes së monitorimit, të cilat kryhen në sfond. Pritni që statusi të tregojë
+**Automatic guidance ON** para testit me një skedar të ri. Nëse hapja mbetet e
+ngadaltë, përdorni **Export diagnostics…**: raporti përmban versionin, matjet e
+nisjes dhe përdorimin e memories/CPU-së së programit, pa emra apo përmbajtje dokumentesh.
+
+Në versionin 0.2.10, projektet e programimit përjashtohen automatikisht. Skedarët
+që krijon Codex ose VS Code brenda një projekti Git/VS Code apo një projekti tjetër
+të njohur nuk hapin pyetjen e ruajtjes, përfshirë dokumentet dhe figurat brenda tij.
+Te **Automatic guidance**, mbajeni aktiv **Skip coding projects automatically**.
+Për një dosje që nuk njihet, klikoni **Exclude a folder…**, zgjidhni projektin ose
+dosjen **Projektet**, pastaj **Apply automatic guidance**. Përjashtimi vlen edhe
+për të gjithë nënfolderët. Dokumentet jashtë këtyre dosjeve vazhdojnë normalisht.
+
+Në 0.2.11, te Automatic guidance klikoni **Connect VS Code / Visual Studio…**.
+Instaloni lidhjen për secilin editor vetëm një herë. Rihapni dritaret e VS Code,
+ose përfundoni instaluesin e shtesës dhe rinisni Visual Studio. Mbajeni aktiv
+**Skip coding projects automatically**. Projektet/dosjet lokale që hapni më pas
+regjistrohen automatikisht, edhe pa Git. Visual Studio kërkon 2022 17.14+ ose 2026,
+Windows x64. Hapni dosjen konkrete të projektit, jo të gjithë Desktop-in.
+Aktivizimi brenda editorëve realë kërkon ende verifikim në kompjuterin pilot.
 
 Kjo është paketë pilot pa nënshkrim digjital. IT duhet ta verifikojë/nënshkruajë
 sipas rregullave të kompanisë; mos anashkalo bllokimet e sigurisë. Testojeni në një
 kompjuter përpara shpërndarjes së përgjithshme. Për çinstalim përdor Windows
 Settings → Apps → Installed apps → PrimEx Smart Save → Uninstall. Konfigurimi,
 operacionet në pritje dhe dokumentet ruhen.
+
+
+Në 0.2.12, ruajtjet dhe shkarkimet nuk e hapin më dritaren kryesore pas pyetjes.
+Kur programi është në tray ose i minimizuar, shfaqet vetëm dritarja e destinacionit.
+Pas zgjedhjes ose mbylljes së saj, dritarja kryesore mbetet e fshehur/minimizuar.
+Për historinë dhe operacionet përdorni Open Smart Save nga ikona pranë orës.

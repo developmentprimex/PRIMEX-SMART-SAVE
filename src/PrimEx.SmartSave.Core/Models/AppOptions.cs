@@ -18,9 +18,10 @@ public sealed class AppOptions
         List<string> errors = [];
         if (CompanyServer == null || SmartSave == null || Browser == null || Office == null || Monitoring == null || Logging == null)
             return ["Configuration sections cannot be null."];
-        if (CompanyServer.ApprovedRoots == null || Browser.AllowedExtensionIds == null || Browser.DownloadsFolder == null || Monitoring.Folders == null || Monitoring.Extensions == null || CompanyServer.ApprovedRoots.Any(x => x == null) || Browser.AllowedExtensionIds.Any(x => x == null) || Monitoring.Folders.Any(x => x == null) || Monitoring.Extensions.Any(x => x == null))
+        if (CompanyServer.ApprovedRoots == null || Browser.AllowedExtensionIds == null || Browser.DownloadsFolder == null || Monitoring.Folders == null || Monitoring.ExcludedFolders == null || Monitoring.Extensions == null || CompanyServer.ApprovedRoots.Any(x => x == null) || Browser.AllowedExtensionIds.Any(x => x == null) || Monitoring.Folders.Any(x => x == null) || Monitoring.ExcludedFolders.Any(x => x == null) || Monitoring.Extensions.Any(x => x == null))
             return ["Configuration collections and folder values cannot be null."];
         if (Monitoring.QuietSeconds is < 1 or > 60) errors.Add("Monitoring.QuietSeconds must be between 1 and 60.");
+        if (Monitoring.ExcludedFolders.Any(string.IsNullOrWhiteSpace)) errors.Add("Excluded folders must be nonempty absolute paths.");
         if (!Services.MonitoringFileTypes.IsValid(Monitoring.Extensions)) errors.Add("Monitoring.Extensions must be [\"*\"] for all file types, or a list such as [\".pdf\", \".png\"].");
         if (!SmartSave.AllowOutsideServer) errors.Add("Outside-server saving must remain available in this edition.");
         if (CompanyServer.PreferredDestination != "CompanyServer") errors.Add("PreferredDestination must be CompanyServer.");
@@ -29,7 +30,7 @@ public sealed class AppOptions
         if (Logging.Level is not ("Information" or "Error" or "None")) errors.Add("Logging.Level must be Information, Error or None.");
         foreach (var id in Browser.AllowedExtensionIds)
             if (!Regex.IsMatch(id, "^[a-p]{32}$")) errors.Add("Extension IDs must contain exactly 32 letters a-p.");
-        foreach (var root in CompanyServer.ApprovedRoots.Concat(Monitoring.Folders).Append(Browser.DownloadsFolder).Where(x => x.Length > 0))
+        foreach (var root in CompanyServer.ApprovedRoots.Concat(Monitoring.Folders).Concat(Monitoring.ExcludedFolders).Append(Browser.DownloadsFolder).Where(x => x.Length > 0))
             try { Services.PathRules.NormalizeAbsolute(root); } catch (ArgumentException) { errors.Add("Configured folders must be absolute Windows or UNC paths without traversal."); }
         if (Browser.Enabled && Browser.DownloadsFolder.Length == 0) errors.Add("Browser.DownloadsFolder is required when browser integration is enabled.");
         if (Monitoring.Enabled && Monitoring.Folders.Length == 0) errors.Add("Monitoring requires explicit folders.");
@@ -74,6 +75,8 @@ public sealed class MonitoringOptions
 {
     public bool Enabled { get; set; }
     public string[] Folders { get; set; } = [];
+    public string[] ExcludedFolders { get; set; } = [];
+    public bool IgnoreDevelopmentProjects { get; set; } = true;
     public bool IncludeSubdirectories { get; set; }
     public string[] Extensions { get; set; } = ["*"];
     public int QuietSeconds { get; set; } = 3;

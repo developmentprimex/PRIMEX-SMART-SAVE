@@ -10,16 +10,35 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.7/PrimEx.SmartSave-0.2.7-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.12/PrimEx.SmartSave-0.2.12-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
 enabled. See [deployment details and validation limits](installer/README.md).
 
-The current installer folder contains only the 0.2.7 MSI, its SHA-256 checksum and
-staff instructions. Older installers and generated test/publish copies are kept
-separately in `artifacts/_ARKIV-VERSIONE-TE-VJETRA`; use only the current installer
-linked above. Source code, build tools and user configuration are retained.
+Version 0.2.8 keeps existing documents in their current location on repeated
+saves, without another placement prompt, including after restarting the agent
+or an atomic replacement save. New documents still receive first-save guidance.
+Use the current installer linked above. Obsolete packages and generated test/publish
+copies have been removed. Its folder contains only the current MSI, checksum and staff guide.
+
+Version 0.2.9 shows the window before loading history and preparing monitoring.
+The startup index skips entire excluded cache trees, reuses enumeration metadata
+and shares watchers for overlapping recursive folders. See [performance measurements](docs/performance.md).
+
+Version 0.2.10 skips coding projects automatically, so Codex/VS Code changes stay
+inside their project without placement prompts. Automatic guidance also has an
+explicit excluded-folder list for projects without recognizable markers. Ordinary
+documents in neighboring watched folders still receive guidance. See [project exclusions](docs/automatic-guidance.md#coding-projects-and-excluded-folders-0210).
+
+Version 0.2.11 adds one-time VS Code and Visual Studio links for unmarked new
+projects. In Automatic guidance, click Connect VS Code / Visual Studio and install
+each link once. Later local workspaces/solutions register automatically. See
+[setup, scope and validation limits](docs/editor-integrations.md).
+
+Version 0.2.12 shows placement dialogs independently when the main window is in
+the tray or minimized. Automatic saves/downloads do not open or restore the main
+queue behind the prompt. Open the queue explicitly from the tray when needed.
 
 ## Build and run
 

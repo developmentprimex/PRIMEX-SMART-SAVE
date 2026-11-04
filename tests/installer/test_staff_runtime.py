@@ -7,6 +7,8 @@ import sys
 import tempfile
 import time
 import unittest
+import ctypes
+from ctypes import wintypes
 
 EXE = Path(sys.argv.pop(1)).resolve() if len(sys.argv) > 1 and sys.argv[1].endswith(".exe") else None
 
@@ -59,6 +61,8 @@ class StaffRuntimeTests(unittest.TestCase):
                 self.assertEqual([], options["CompanyServer"]["ApprovedRoots"])
                 self.assertFalse(options.get("GuidanceSetupCompleted", False))
                 self.assertEqual(["*"], options["Monitoring"]["Extensions"])
+                self.assertTrue(options["Monitoring"]["IgnoreDevelopmentProjects"])
+                self.assertEqual([], options["Monitoring"]["ExcludedFolders"])
                 self.assertEqual([], list((data / "operations").glob("*.json")))
             finally:
                 self.stop(process)
@@ -125,6 +129,133 @@ class StaffRuntimeTests(unittest.TestCase):
                 self.assertTrue(all(item["State"] == 0 for item in requests))
                 self.assertEqual(original, settings.read_text())
                 self.assertTrue((watched / "image.png.crdownload").exists())
+            finally:
+                self.stop(process)
+
+    def test_coding_projects_and_explicit_exclusions_never_queue_requests(self):
+        with tempfile.TemporaryDirectory(prefix="PrimEx-Staff-Projects-") as temporary:
+            data = Path(temporary)
+            watched = data / "downloads"
+            project, excluded = watched / "coding-project", watched / "unmarked-project"
+            (project / ".git").mkdir(parents=True)
+            excluded.mkdir()
+            self.write_settings(data)
+            settings = data / "appsettings.json"
+            options = json.loads(settings.read_text())
+            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], IncludeSubdirectories=True, QuietSeconds=1, ExcludedFolders=[str(excluded)])
+            settings.write_text(json.dumps(options))
+            process = self.launch(data)
+            try:
+                self.wait_for_event(process, data, "MonitoringStarted")
+                for folder in (project, excluded):
+                    for name in ("README.md", "settings.json", "asset.png", "document.pdf"):
+                        (folder / name).write_text("synthetic project asset")
+                (watched / "normal.pdf").write_text("ordinary document")
+                journal = data / "operations"
+                for _ in range(100):
+                    self.assertIsNone(process.poll())
+                    if list(journal.glob("*.json")):
+                        break
+                    time.sleep(0.1)
+                time.sleep(1.5)
+                requests = [json.loads(path.read_text()) for path in journal.glob("*.json")]
+                self.assertEqual(["normal.pdf"], [item["Request"]["DisplayName"] for item in requests])
+                self.assertTrue((project / "README.md").exists() and (excluded / "README.md").exists())
+            finally:
+                self.stop(process)
+
+    def test_background_save_shows_only_prompt_and_never_the_main_queue(self):
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+        callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        user32.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+        user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        user32.IsWindowVisible.argtypes = [wintypes.HWND]
+        user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        def visible_windows(pid):
+            windows = []
+            @callback_type
+            def collect(hwnd, _):
+                owner_pid = wintypes.DWORD()
+                user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner_pid))
+                if owner_pid.value == pid and user32.IsWindowVisible(hwnd):
+                    title = ctypes.create_unicode_buffer(512)
+                    user32.GetWindowTextW(hwnd, title, 512)
+                    windows.append((hwnd, title.value))
+                return True
+            user32.EnumWindows(collect, 0)
+            return windows
+        with tempfile.TemporaryDirectory(prefix="PrimEx-Staff-Standalone-") as temporary:
+            data = Path(temporary)
+            watched = data / "downloads"
+            watched.mkdir()
+            self.write_settings(data)
+            settings = data / "appsettings.json"
+            options = json.loads(settings.read_text())
+            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], QuietSeconds=1)
+            settings.write_text(json.dumps(options))
+            process = self.launch(data)
+            try:
+                self.wait_for_event(process, data, "MonitoringStarted")
+                self.assertEqual([], visible_windows(process.pid))
+                document = watched / "normal.pdf"
+                document.write_text("synthetic ordinary download")
+                prompt = None
+                for _ in range(100):
+                    windows = visible_windows(process.pid)
+                    self.assertFalse(any("Document Storage Manager" in title for _, title in windows))
+                    prompt = next((hwnd for hwnd, title in windows if title == "Downloads or Files PX"), None)
+                    if prompt:
+                        break
+                    self.assertIsNone(process.poll())
+                    time.sleep(0.1)
+                self.assertIsNotNone(prompt)
+                user32.PostMessageW(prompt, 0x0010, 0, 0)  # WM_CLOSE: dismiss this isolated test prompt.
+                for _ in range(60):
+                    requests = [json.loads(path.read_text()) for path in (data / "operations").glob("*.json")]
+                    if requests and requests[0]["State"] == 4:
+                        break
+                    time.sleep(0.1)
+                self.assertEqual(4, requests[0]["State"])
+                self.assertEqual([], visible_windows(process.pid))
+                self.assertTrue(document.exists())
+            finally:
+                self.stop(process)
+
+    def test_editor_link_suppresses_an_empty_project_and_close_restores_normal_guidance(self):
+        from datetime import datetime, timezone
+        with tempfile.TemporaryDirectory(prefix="PrimEx-Staff-Editor-Link-") as temporary:
+            data = Path(temporary)
+            watched, project = data / "downloads", data / "downloads/new-empty-project"
+            project.mkdir(parents=True)
+            leases = data / "editor-workspaces"
+            leases.mkdir()
+            (leases / "code.json").write_text(json.dumps(dict(version=1, editor="VSCode", processId=os.getpid(),
+                updatedUtc=datetime.now(timezone.utc).isoformat(), folders=[str(project)])))
+            self.write_settings(data)
+            settings = data / "appsettings.json"
+            options = json.loads(settings.read_text())
+            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], IncludeSubdirectories=True, QuietSeconds=1)
+            settings.write_text(json.dumps(options))
+            process = self.launch(data)
+            try:
+                self.wait_for_event(process, data, "MonitoringStarted")
+                for name in ("README.md", "settings.json", "report.pdf", "asset.png"):
+                    (project / name).write_text("synthetic editor asset")
+                time.sleep(1.7)
+                self.assertEqual([], list((data / "operations").glob("*.json")))
+                (leases / "code.json").unlink()
+                time.sleep(0.3)
+                (project / "after-close.pdf").write_text("ordinary file after editor close")
+                for _ in range(100):
+                    if list((data / "operations").glob("*.json")):
+                        break
+                    self.assertIsNone(process.poll())
+                    time.sleep(0.1)
+                requests = [json.loads(path.read_text()) for path in (data / "operations").glob("*.json")]
+                self.assertEqual(["after-close.pdf"], [item["Request"]["DisplayName"] for item in requests])
+                integrations = EXE.parent / "EditorIntegrations"
+                self.assertTrue(any(integrations.glob("*VSCode*.vsix")) and any(integrations.glob("*VisualStudio*.vsix")))
             finally:
                 self.stop(process)
 

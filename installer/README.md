@@ -1,10 +1,41 @@
-# Staff MSI 0.2.7 — per-user pilot
+# Staff MSI 0.2.12 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.7/PrimEx.SmartSave-0.2.7-win-x64.msi`.
+`artifacts/staff-installer-0.2.12/PrimEx.SmartSave-0.2.12-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+0.2.12 stops opening/restoring the queue for monitored saves and explicit browser
+downloads. Placement dialogs use the main window as owner only if it is already
+visible and not minimized. Otherwise they center independently with a taskbar/
+Alt+Tab entry. Company-folder and browser destination steps follow the same rule.
+Open Smart Save/View Pending Operations still opens the queue explicitly.
+
+0.2.11 bundles one-time VS Code / Visual Studio workspace links and a Connect
+editors screen in Automatic guidance. Later local projects need no manual
+exclusion, even without Git. See docs/editor-integrations.md for supported
+versions and actual-editor acceptance limits. Restore the separate Visual Studio
+SDK project before building the MSI; the builder then packages both links offline.
+
+0.2.10 suppresses automatic placement prompts for recognized coding projects.
+Git/worktrees, VS Code settings and common project manifests identify project
+roots, including documents/assets underneath them. Automatic guidance includes
+a Skip coding projects checkbox (on by default) and explicit excluded folders.
+Existing configurations gain the default without being rewritten; custom folder
+and file-type choices remain. Explicit Move a file remains available.
+
+0.2.9 improves startup: the window opens before background history loading and
+monitor initialization. The initial index prunes excluded cache/server/staging
+trees and avoids repeated file/ancestor metadata reads. Overlapping recursive
+folders share a watcher; idle monitoring waits for an event. Export diagnostics
+now includes the actual version, process CPU/memory and initialization metrics.
+See `docs/performance.md` for a controlled comparison and its limits.
+
+0.2.8 suppresses placement prompts when existing documents are resaved. It indexes
+existing eligible paths at monitoring startup and offers each newly saved path
+only once. Atomic replacement saves, changed creation times and agent restarts
+do not reopen the placement question. New Save As copies still receive guidance.
 
 0.2.4 names the two choices **Files PX** (company server) and **Downloads**
 (keep the current local folder). The existing location/permission/conflict and
@@ -48,7 +79,8 @@ the matching WixToolset.UI.wixext extension. Keep build tools outside the instal
 payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.7
+dotnet restore extensions/visual-studio/PrimEx.SmartSave.VisualStudio.csproj
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.12
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -64,7 +96,7 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.7 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.12 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 
@@ -74,11 +106,13 @@ search, This PC and New folder controls. Only configured company roots can be
 confirmed. After Select Folder, review the filename and click Move here. Cancel
 leaves the source untouched; Keep Current Location appears only in the first prompt.
 
-0.2.3 persists explicit Keep Current Location choices under the user's separate
+0.2.3 introduced explicit Keep Current Location choices under the user's separate
 state directory. Repeated saves at that path with the same creation timestamp no
 longer prompt, including after restarting. Closing/cancelling a dialog does not
 persist consent. A new name/path or changed creation time is considered a new
-candidate. This does not redirect Save As or synchronize local changes to a server.
+candidate under that version. Since 0.2.8, the existing-path baseline also suppresses
+resave prompts when creation time changes or no explicit Keep choice was recorded.
+This does not redirect Save As or synchronize local changes to a server.
 
 To additionally include/register the native host, pass `--extension-id <actual-id>`
 once per approved Chrome/Edge extension ID. This does not install the extension

@@ -1,0 +1,14 @@
+[$RootKey$\Packages\{E7DBA7A8-70C5-44C8-83AC-E435452BD52A}]
+@="PrimEx Smart Save Workspace Link"
+"Class"="PrimEx.SmartSave.VisualStudio.WorkspaceLinkPackage"
+"Assembly"="PrimEx.SmartSave.VisualStudio, Version=@VERSION@, Culture=neutral, PublicKeyToken=null"
+"InprocServer32"="$WinDir$\\SYSTEM32\\MSCOREE.DLL"
+"CodeBase"="$PackageFolder$\\PrimEx.SmartSave.VisualStudio.dll"
+"AllowsBackgroundLoading"=dword:00000001
+
+[$RootKey$\AutoLoadPackages\{ADFC4E64-0397-11D1-9F4E-00A0C911004F}]
+"{E7DBA7A8-70C5-44C8-83AC-E435452BD52A}"=dword:00000002
+[$RootKey$\AutoLoadPackages\{F1536EF8-92EC-443C-9ED7-FDADF150DA82}]
+"{E7DBA7A8-70C5-44C8-83AC-E435452BD52A}"=dword:00000002
+[$RootKey$\AutoLoadPackages\{4646B819-1AE0-4E79-97F4-8A8176FDD664}]
+"{E7DBA7A8-70C5-44C8-83AC-E435452BD52A}"=dword:00000002

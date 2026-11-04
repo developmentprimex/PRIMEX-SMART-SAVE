@@ -25,6 +25,12 @@ public partial class AutomaticGuidanceDialog : Window
         var picker = new OpenFolderDialog { Title = "Choose your authorized company server root", Multiselect = false };
         if (picker.ShowDialog(this) == true) model.ApprovedRoots = string.Join(Environment.NewLine, model.ApprovedRoots.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Append(picker.FolderName).Distinct(StringComparer.OrdinalIgnoreCase));
     }
+    private void ExcludeFolder(object sender, RoutedEventArgs e)
+    {
+        var picker = new OpenFolderDialog { Title = "Choose a folder that should never show placement prompts", Multiselect = false };
+        if (picker.ShowDialog(this) == true) model.ExcludedFolders = string.Join(Environment.NewLine, model.ExcludedFolders.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Append(picker.FolderName).Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+    private void ConnectEditors(object sender, RoutedEventArgs e) => new EditorIntegrationDialog { Owner = this }.ShowDialog();
     private async void Apply(object sender, RoutedEventArgs e)
     {
         ApplyButton.IsEnabled = false; OptionsPanel.IsEnabled = false; model.Error = "";

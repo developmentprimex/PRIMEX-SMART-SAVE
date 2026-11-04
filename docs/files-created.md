@@ -1,5 +1,26 @@
 ﻿# Exact source-file inventory
 
+- `docs/editor-integrations.md`
+- `extensions/build_editor_links.py`
+- `extensions/vscode/package.json`
+- `extensions/vscode/extension.cjs`
+- `extensions/vscode/lease-writer.cjs`
+- `extensions/vscode/README.md`
+- `extensions/visual-studio/PrimEx.SmartSave.VisualStudio.csproj`
+- `extensions/visual-studio/PrimEx.SmartSave.VisualStudio.pkgdef`
+- `extensions/visual-studio/WorkspaceLeasePublisher.cs`
+- `extensions/visual-studio/WorkspaceLinkPackage.cs`
+- `extensions/visual-studio/README.md`
+- `src/PrimEx.SmartSave.Core/Services/EditorWorkspaceRegistry.cs`
+- `src/PrimEx.SmartSave.Desktop/Components/EditorIntegrationService.cs`
+- `src/PrimEx.SmartSave.Desktop/Views/EditorIntegrationDialog.xaml`
+- `src/PrimEx.SmartSave.Desktop/Views/EditorIntegrationDialog.xaml.cs`
+- `tests/editors/extension.test.cjs`
+- `tests/editors/workspace-link.test.cjs`
+- `tests/editors/publish-lease.cjs`
+- `tests/editors/run_vscode_host.py`
+- `tests/editors/vscode-host.cjs`
+- `tests/editors/test_packages.py`
 - `.gitignore`
 - `config/appsettings.example.json`
 - `Directory.Build.props`
