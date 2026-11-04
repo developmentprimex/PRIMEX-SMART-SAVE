@@ -11,9 +11,9 @@ public partial class MainWindow : Window
     public MainWindow(QueueViewModel model) { InitializeComponent(); this.model = model; DataContext = model; Closing += (_, e) => { if (!((App)Application.Current).IsExiting) { e.Cancel = true; Hide(); } }; }
     private async void MoveFile(object sender, RoutedEventArgs e)
     {
-        var picker = new OpenFileDialog { Title = "Choose a completed file to move", CheckFileExists = true };
+        var picker = new OpenFileDialog { Title = "Choose a completed file to move or copy", CheckFileExists = true };
         if (picker.ShowDialog(this) != true) return;
-        if (MessageBox.Show(this, "Move this file after you choose a destination? Keep the original application closed during the transfer.", "Move file", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
+        if (MessageBox.Show(this, "Choose a destination and select Move or Copy for Files PX. Keep the original application closed during the transfer.", "Move or copy file", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
         var request = new SaveRequest(Guid.NewGuid(), picker.FileName, Path.GetFileName(picker.FileName), "Manual", DateTimeOffset.UtcNow);
         try { model.Enqueue(request); await model.ProcessAsync(request.Id); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { model.Status = "Could not persist the request. The source is unchanged."; }

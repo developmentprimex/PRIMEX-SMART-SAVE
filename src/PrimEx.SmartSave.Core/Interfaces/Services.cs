@@ -11,5 +11,5 @@ public interface IServerFolderService
     Task<string> CreateDirectoryAsync(string parent, string name, CancellationToken cancellationToken = default);
     bool IsApproved(string path);
 }
-public interface IDestinationSelector { Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default); }
+public interface IDestinationSelector { Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move); }
 public interface IEventLog { void Write(string eventName, Guid? operationId = null, string? code = null); }

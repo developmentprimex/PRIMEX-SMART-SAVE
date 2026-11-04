@@ -1,10 +1,16 @@
-# Staff MSI 0.2.12 — per-user pilot
+# Staff MSI 0.2.13 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.12/PrimEx.SmartSave-0.2.12-win-x64.msi`.
+`artifacts/staff-installer-0.2.13/PrimEx.SmartSave-0.2.13-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+0.2.13 adds Move / Copy selection to both the monitored-save and manual/browser
+Files PX destination screens, without an extra dialog. Move remains the default;
+Copy retains the original and verifies the server copy. The selected action is
+journaled and restored when retrying an interrupted/failed operation. Old journals
+retain Move semantics. Copy does not synchronize subsequent local edits.
 
 0.2.12 stops opening/restoring the queue for monitored saves and explicit browser
 downloads. Placement dialogs use the main window as owner only if it is already
@@ -80,7 +86,7 @@ payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
 dotnet restore extensions/visual-studio/PrimEx.SmartSave.VisualStudio.csproj
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.12
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.13
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -96,14 +102,14 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.12 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.13 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 
 0.2.2 replaces the custom company-folder list with the supported Windows Shell
 folder picker. Move to Company Server opens familiar breadcrumb navigation,
 search, This PC and New folder controls. Only configured company roots can be
-confirmed. After Select Folder, review the filename and click Move here. Cancel
+confirmed. After Select Folder, review the filename, select Move or Copy and confirm the matching button. Cancel
 leaves the source untouched; Keep Current Location appears only in the first prompt.
 
 0.2.3 introduced explicit Keep Current Location choices under the user's separate

@@ -169,6 +169,33 @@ internal static class Program
                 }
                 finally { if (!process.HasExited) process.Kill(); await process.WaitForExitAsync(); }
             });
+            await Test("Files PX confirmation offers Move and Copy with matching confirmation text", async () => {
+                var dialog = new CompanyMoveDialog(request, servers, new FixedCompanyFolderPicker(root));
+                try
+                {
+                    dialog.Show(); dialog.UpdateLayout();
+                    Assert(dialog.FindName("MoveTransferOption") is RadioButton && dialog.FindName("CopyTransferOption") is RadioButton);
+                    var move = (RadioButton)dialog.FindName("MoveTransferOption"); var copy = (RadioButton)dialog.FindName("CopyTransferOption");
+                    Assert(move.IsChecked == true && copy.IsChecked != true);
+                    copy.IsChecked = true; dialog.UpdateLayout(); Assert(((Button)dialog.FindName("MoveButton")).Content.ToString() == "_Copy here");
+                    move.IsChecked = true; dialog.UpdateLayout(); Assert(((Button)dialog.FindName("MoveButton")).Content.ToString() == "_Move here");
+                }
+                finally { dialog.Close(); }
+                await Task.CompletedTask;
+            });
+            await Test("Manual and browser destinations offer Copy only for Files PX", async () => {
+                var dialog = new SaveDialog(request, servers, resolver);
+                try
+                {
+                    dialog.Show(); dialog.UpdateLayout();
+                    Assert(dialog.FindName("CopyTransferOption") is RadioButton && dialog.FindName("TransferOptions") is Border);
+                    Assert(((Border)dialog.FindName("TransferOptions")).IsVisible);
+                    ((RadioButton)dialog.FindName("OutsideOption")).IsChecked = true; dialog.UpdateLayout();
+                    Assert(!((Border)dialog.FindName("TransferOptions")).IsVisible);
+                }
+                finally { dialog.Close(); }
+                await Task.CompletedTask;
+            });
             await Test("Smart Save WPF window loads with Company Server selected", async () => {
                 var dialog = new SaveDialog(request, servers, resolver); dialog.Show(); dialog.UpdateLayout();
                 Assert(((RadioButton)dialog.FindName("CompanyOption")).IsChecked == true);
@@ -222,7 +249,7 @@ internal static class Program
                 await Task.CompletedTask;
             });
             foreach (string mainState in new[] { "Hidden", "Minimized" })
-            foreach (string flow in new[] { "Keep", "Move", "Browser" })
+            foreach (string flow in new[] { "Keep", "Move", "Copy", "Browser", "BrowserCopy" })
             {
                 await Test($"{flow} prompt leaves the main queue {mainState.ToLowerInvariant()}", async () => {
                     var main = new Window { Title = "Main queue must stay out of the way", Width = 650, Height = 400 };
@@ -262,18 +289,43 @@ internal static class Program
                                     ((Button)prompt.FindName("ConfirmDownloadsButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                             }
                             else if (window is CompanyMoveDialog move && !companySeen && ((Button)move.FindName("MoveButton")).IsEnabled)
-                            { companySeen = true; ((Button)move.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
-                            else if (window is SaveDialog save) { promptSeen = true; save.Close(); }
+                            {
+                                companySeen = true;
+                                if (flow == "Copy")
+                                {
+                                    ((RadioButton)move.FindName("CopyTransferOption")).IsChecked = true;
+                                    move.UpdateLayout();
+                                    if (mainState == "Hidden")
+                                    {
+                                        var bitmap = new RenderTargetBitmap((int)move.ActualWidth, (int)move.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(move);
+                                        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                                        using var stream = File.Create(Path.GetFullPath("artifacts/verification/files-px-copy.png")); encoder.Save(stream);
+                                    }
+                                }
+                                ((Button)move.FindName("MoveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            }
+                            else if (window is SaveDialog save && !companySeen)
+                            {
+                                promptSeen = true;
+                                if (flow == "BrowserCopy")
+                                {
+                                    companySeen = true;
+                                    ((RadioButton)save.FindName("CopyTransferOption")).IsChecked = true;
+                                    ((TextBox)save.FindName("FolderBox")).Text = company;
+                                    ((Button)save.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                                }
+                                else save.Close();
+                            }
                         }
                     };
                     driver.Start();
                     try
                     {
                         var selector = new WpfDestinationSelector(companyService, resolver, new FixedCompanyFolderPicker(company), remembered);
-                        var selected = await selector.SelectAsync(request with { Integration = flow == "Browser" ? "Browser" : "Monitoring" });
+                        var selected = await selector.SelectAsync(request with { Integration = flow.StartsWith("Browser") ? "Browser" : "Monitoring" });
                         Assert(!timedOut && promptSeen && !mainRestored && !invalidPresentation && File.Exists(source));
                         Assert(mainState == "Hidden" ? !main.IsVisible : main.WindowState == WindowState.Minimized);
-                        if (flow == "Move") Assert(companySeen && selected?.Folder == company);
+                        if (flow is "Move" or "Copy" or "BrowserCopy") Assert(companySeen && selected?.Folder == company && selected.Mode == (flow == "Move" ? TransferMode.Move : TransferMode.Copy));
                         else Assert(selected == null && remembered.Contains(source) == (flow == "Keep"));
                     }
                     finally { driver.Stop(); main.Close(); Application.Current.MainWindow = previous; }
@@ -399,6 +451,39 @@ internal static class Program
                 model.FileName = "..\\escape"; Assert(!await model.ValidateAsync());
             });
             var selector = new FixedSelector(root);
+            await Test("Choosing Copy keeps the original and records a verified server copy", async () => {
+                string local = Path.Combine(root, "copy-original.txt"), destination = Path.Combine(root, "copy-server"); Directory.CreateDirectory(destination);
+                File.WriteAllText(local, "original bytes stay local");
+                var selected = new DestinationSelection(destination, "server-copy.txt", DestinationKind.CompanyServer, ConflictChoice.Cancel, TransferMode.Copy);
+                var store = new OperationStore(Path.Combine(root, "copy-operations"));
+                var copyQueue = new QueueViewModel(store, transfer, new SelectedDestinationSelector(selected), logger);
+                var copyRequest = new SaveRequest(Guid.NewGuid(), local, "copy-original.txt", "Monitoring", DateTimeOffset.UtcNow);
+                copyQueue.Enqueue(copyRequest); await copyQueue.ProcessAsync(copyRequest.Id);
+                Assert(File.Exists(local) && File.ReadAllText(local) == "original bytes stay local");
+                Assert(File.ReadAllText(Path.Combine(destination, "server-copy.txt")) == "original bytes stay local");
+                Assert(copyQueue.Operations.Single().State == OperationState.Completed);
+                Assert(store.Load().Single().Mode == TransferMode.Copy);
+                Assert(copyQueue.Status.Contains("original remains", StringComparison.OrdinalIgnoreCase));
+                var reopened = new QueueViewModel(store, transfer, new SelectedDestinationSelector(selected), logger);
+                await reopened.ProcessAsync(copyRequest.Id);
+                Assert(reopened.Operations.Single().Mode == TransferMode.Copy && Directory.GetFiles(destination).Length == 1 && File.Exists(local));
+            });
+            await Test("Copy retry preserves the selected action after an unavailable destination and restart", async () => {
+                string local = Path.Combine(root, "retry-copy.txt"), destination = Path.Combine(root, "offline-copy-server");
+                File.WriteAllText(local, "copy retry original");
+                var store = new OperationStore(Path.Combine(root, "retry-copy-operations"));
+                var selected = new DestinationSelection(destination, "retry-copy.txt", DestinationKind.CompanyServer, ConflictChoice.Cancel, TransferMode.Copy);
+                var copyQueue = new QueueViewModel(store, transfer, new SelectedDestinationSelector(selected), logger);
+                var copyRequest = new SaveRequest(Guid.NewGuid(), local, "retry-copy.txt", "Manual", DateTimeOffset.UtcNow);
+                copyQueue.Enqueue(copyRequest); await copyQueue.ProcessAsync(copyRequest.Id);
+                Assert(copyQueue.Operations.Single().State == OperationState.NeedsReview && File.Exists(local));
+                Directory.CreateDirectory(destination);
+                var retrySelector = new SelectedDestinationSelector(selected);
+                var reopened = new QueueViewModel(store, transfer, retrySelector, logger);
+                reopened.Retry(copyRequest.Id); await reopened.ProcessAsync(copyRequest.Id);
+                Assert(retrySelector.LastInitialMode == TransferMode.Copy && reopened.Operations.Single().State == OperationState.Completed);
+                Assert(File.ReadAllText(local) == "copy retry original" && File.ReadAllText(Path.Combine(destination, "retry-copy.txt")) == "copy retry original");
+            });
             await Test("Deferred startup history preserves pending work and interrupted-transfer recovery", async () => {
                 var history = new OperationStore(Path.Combine(root, "deferred-history"));
                 var pending = new PendingOperation(request with { Id = Guid.NewGuid() });
@@ -461,7 +546,13 @@ internal static class Program
     private sealed class FixedSelector(string root) : IDestinationSelector
     {
         public bool Cancel { get; set; }
-        public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default) => Task.FromResult<DestinationSelection?>(Cancel ? null : new(root, "moved-" + request.DisplayName, DestinationKind.OutsideServer, ConflictChoice.Cancel));
+        public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move) => Task.FromResult<DestinationSelection?>(Cancel ? null : new(root, "moved-" + request.DisplayName, DestinationKind.OutsideServer, ConflictChoice.Cancel));
+    }
+    private sealed class SelectedDestinationSelector(DestinationSelection selection) : IDestinationSelector
+    {
+        public TransferMode? LastInitialMode { get; private set; }
+        public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move)
+        { LastInitialMode = initialMode; return Task.FromResult<DestinationSelection?>(selection); }
     }
     private sealed class FixedCompanyFolderPicker(string? folder) : ICompanyFolderPicker
     {

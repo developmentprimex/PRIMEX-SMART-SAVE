@@ -11,9 +11,9 @@ public partial class SaveDialog : Window
     private readonly IServerFolderService servers;
     private readonly ICompanyFolderPicker companyPicker;
     public DestinationSelection? Selection { get; private set; }
-    public SaveDialog(SaveRequest request, IServerFolderService servers, IPathResolver resolver)
+    public SaveDialog(SaveRequest request, IServerFolderService servers, IPathResolver resolver, TransferMode initialMode = TransferMode.Move)
     {
-        InitializeComponent(); this.servers = servers; companyPicker = new WindowsCompanyFolderPicker(servers, resolver); model = new(request, servers, resolver); DataContext = model;
+        InitializeComponent(); this.servers = servers; companyPicker = new WindowsCompanyFolderPicker(servers, resolver); model = new(request, servers, resolver, initialMode); DataContext = model;
         Loaded += (_, _) => CompanyOption.Focus();
     }
     private void BrowseOutside(object sender, RoutedEventArgs e)
@@ -43,6 +43,7 @@ public partial class SaveDialog : Window
             // Capture the validated values before any further interaction.
             string folder = model.Folder, name = model.FileName;
             var kind = model.CompanySelected ? DestinationKind.CompanyServer : DestinationKind.OutsideServer;
+            var mode = model.CompanySelected ? model.TransferChoice.Mode : TransferMode.Move;
             ConflictChoice conflict = ConflictChoice.Cancel;
             bool exists;
             try { exists = await Task.Run(() => File.Exists(Path.Combine(folder, name))).WaitAsync(TimeSpan.FromSeconds(12)); }
@@ -54,7 +55,7 @@ public partial class SaveDialog : Window
                 if (choice.ShowDialog() != true) return;
                 conflict = choice.Choice;
             }
-            Selection = new(folder, name, kind, conflict); DialogResult = true;
+            Selection = new(folder, name, kind, conflict, mode); DialogResult = true;
         }
         finally { ConfirmButton.IsEnabled = true; ChoicePanel.IsEnabled = true; }
     }

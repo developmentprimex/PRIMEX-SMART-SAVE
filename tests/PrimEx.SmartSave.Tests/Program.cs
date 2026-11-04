@@ -166,6 +166,15 @@ try
         store.Save(new(req, OperationState.Transferring)); Assert(store.Load().Single().State == OperationState.NeedsReview);
         store.Save(new(req, OperationState.Completed)); Assert(store.Load().Single().State == OperationState.Completed);
     }));
+    await Test("Journals from before Move and Copy selection retain Move semantics", () => Sync(() => {
+        string folder = Path.Combine(root, "legacy-transfer-mode"); Directory.CreateDirectory(folder);
+        var req = new SaveRequest(Guid.NewGuid(), NewFile(), "legacy.txt", "Manual", DateTimeOffset.UtcNow);
+        File.WriteAllText(Path.Combine(folder, req.Id.ToString("N") + ".json"), System.Text.Json.JsonSerializer.Serialize(new { Request = req, State = OperationState.Transferring, Destination = req.SourcePath + ".server", ErrorCode = (string?)null }));
+        var recovered = new OperationStore(folder).Load().Single();
+        Assert(recovered.Mode == TransferMode.Move && recovered.State == OperationState.NeedsReview);
+        var selection = System.Text.Json.JsonSerializer.Deserialize<DestinationSelection>("{\"Folder\":\"legacy\",\"FileName\":\"file.txt\",\"Kind\":0,\"Conflict\":0}");
+        Assert(selection?.Mode == TransferMode.Move);
+    }));
     await Test("Logs exclude filenames and rotate", () => Sync(() => {
         var logger = new RotatingEventLog(Path.Combine(root, "rotate"), new() { MaxBytes = 4096, RetainedFiles = 2 });
         for (int i = 0; i < 200; i++) logger.Write("TransferCompleted", Guid.NewGuid());

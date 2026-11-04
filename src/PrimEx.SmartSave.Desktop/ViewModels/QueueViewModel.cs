@@ -15,12 +15,12 @@ public sealed class QueueViewModel(OperationStore store, ITransferService transf
         var history = await Task.Run(store.Load);
         Operations = new(history);
         IsReady = true;
-        Status = "Ready. Choose a file to move, or review pending downloads.";
+        Status = "Ready. Choose a file to move or copy, or review pending downloads.";
     }
     private readonly SemaphoreSlim queue = new(1);
     public bool IsProcessing => queue.CurrentCount == 0;
     private CancellationTokenSource? active;
-    private string status = "Ready. Choose a file to move, or review pending downloads.";
+    private string status = "Ready. Choose a file to move or copy, or review pending downloads.";
     private string guidanceStatus = "Automatic guidance is off. Set it up to watch downloads and saved documents.";
     public string GuidanceStatus { get => guidanceStatus; set => Set(ref guidanceStatus, value); }
     public string Status { get => status; set => Set(ref status, value); }
@@ -43,17 +43,18 @@ public sealed class QueueViewModel(OperationStore store, ITransferService transf
         {
             var item = Operations.First(x => x.Request.Id == id);
             if (item.State is OperationState.Completed or OperationState.Cancelled or OperationState.NeedsReview) return;
-            var selection = await selector.SelectAsync(item.Request);
+            var selection = await selector.SelectAsync(item.Request, initialMode: item.Mode);
             if (selection == null) { Update(item with { State = OperationState.Cancelled }); Status = item.Request.Integration == "Monitoring" ? "Kept in its current location. No file was moved." : "Cancelled. The source file is still in its current location."; return; }
             string destination = Path.Combine(selection.Folder, selection.FileName);
-            item = item with { State = OperationState.Transferring, Destination = destination, ErrorCode = null }; Update(item);
+            item = item with { State = OperationState.Transferring, Destination = destination, ErrorCode = null, Mode = selection.Mode }; Update(item);
             log.Write("DestinationSelected", id); Status = "Transferring and verifying. You can cancel this transfer.";
             active = new();
             try
             {
-                var result = await Task.Run(() => transfers.TransferAsync(new(id, item.Request.SourcePath, destination, TransferMode.Move, selection.Conflict), active.Token));
+                var result = await Task.Run(() => transfers.TransferAsync(new(id, item.Request.SourcePath, destination, item.Mode, selection.Conflict), active.Token));
                 Update(item with { State = OperationState.Completed, Destination = result.DestinationPath });
-                Status = result.SourceDeleted ? "Transfer completed and verified." : "Copy completed and verified. The source was retained; review it before deleting manually.";
+                Status = item.Mode == TransferMode.Copy ? "Copy completed and verified. The original remains in its current folder."
+                    : result.SourceDeleted ? "Move completed and verified." : "Copy completed and verified. The source was retained; review it before deleting manually.";
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or OperationCanceledException or ArgumentException or InvalidOperationException)
             {

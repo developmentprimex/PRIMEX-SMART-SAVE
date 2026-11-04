@@ -17,7 +17,7 @@ public sealed class WpfDestinationSelector(IServerFolderService servers, IPathRe
         dialog.ShowInTaskbar = dialog.Owner == null;
         return dialog;
     }
-    public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default)
+    public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request.Integration == "Monitoring")
@@ -39,10 +39,10 @@ public sealed class WpfDestinationSelector(IServerFolderService servers, IPathRe
             }
             // The user has already chosen Company Server. Ask only for the folder,
             // filename and any explicit conflict decision, without repeating the choice.
-            var browser = Prepare(new CompanyMoveDialog(request, servers, picker));
+            var browser = Prepare(new CompanyMoveDialog(request, servers, picker, initialMode));
             browser.ShowDialog(); return Task.FromResult(browser.Selection);
         }
-        var dialog = Prepare(new SaveDialog(request, servers, resolver));
+        var dialog = Prepare(new SaveDialog(request, servers, resolver, initialMode));
         dialog.ShowDialog(); return Task.FromResult(dialog.Selection);
     }
 }

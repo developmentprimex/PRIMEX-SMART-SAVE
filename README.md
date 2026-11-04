@@ -10,7 +10,7 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.12/PrimEx.SmartSave-0.2.12-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.13/PrimEx.SmartSave-0.2.13-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
@@ -40,6 +40,11 @@ Version 0.2.12 shows placement dialogs independently when the main window is in
 the tray or minimized. Automatic saves/downloads do not open or restore the main
 queue behind the prompt. Open the queue explicitly from the tray when needed.
 
+Version 0.2.13 adds **Move to Files PX** and **Copy to Files PX — keep original**
+on the existing destination screen. Copy preserves the source folder and creates
+a verified server copy. The action is recorded in history and retained for retry;
+local edits do not automatically update the server copy.
+
 ## Build and run
 
 Requirements: Windows, .NET SDK 10.0.300 or a compatible later feature band,
@@ -59,11 +64,12 @@ watch, enable guidance, and Apply. The screen can also browse for company roots.
 This immediately enables post-save suggestions for completed, unlocked eligible
 files in those folders. See [automatic guidance](docs/automatic-guidance.md).
 
-For a manual test, click **Move a file**, choose a closed test file,
+For a manual test, click **Move / Copy a file**, choose a closed test file,
 then select an approved company folder under **Files PX**, or choose **Downloads**
-for a local/external destination. Both actions
-perform an actual verified move, with source retention if deletion cannot be
-completed safely. Existing files require Keep Both or explicit Replace confirmation.
+for a local/external destination. For Files PX, choose **Move** to remove the
+source only after verification, or **Copy** to retain the original in its current
+folder. Local/external transfers continue to use Move, with source retention if
+deletion cannot be completed safely. Existing files require Keep Both or explicit Replace confirmation.
 
 Without `--data-dir`, state lives in `%LOCALAPPDATA%\PrimEx\SmartSave`.
 `--config <absolute-json-path>` selects a configuration explicitly. A `portable.mode`
@@ -99,7 +105,7 @@ See [validation evidence](docs/validation.md), [manual integration tests](docs/m
 
 | Entry point | Current behavior |
 |---|---|
-| Agent: Move a file | User selects a completed file, chooses destination, then verifies and moves it |
+| Agent: Move / Copy a file | User selects a completed file and destination; Files PX supports verified Move or Copy |
 | Browser: explicit context-menu link download | Browser stages it first; agent prompts for final placement after completion |
 | Ordinary Save / Save As in other apps | Uses that application's normal save behavior |
 | Ordinary browser downloads | Normal browser behavior, plus a post-save suggestion if automatic folder guidance is enabled for the destination |

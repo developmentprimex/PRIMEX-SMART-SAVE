@@ -26,6 +26,12 @@
       <TextBlock Text="Choose Downloads or another local or external folder" TextWrapping="Wrap" Foreground="#617586" Margin="24,8,0,4"/>
       <Button Content="_Browse destination…" Click="BrowseOutside" HorizontalAlignment="Left" IsEnabled="{Binding OutsideSelected}"/>
     </StackPanel></Border>
+    <Border x:Name="TransferOptions" Style="{StaticResource Card}" Visibility="{Binding CompanySelected, Converter={StaticResource ShowWhenSelected}}"><StackPanel>
+      <TextBlock Text="How would you like to save it in Files PX?" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8"/>
+      <RadioButton x:Name="MoveTransferOption" Content="_Move to Files PX" GroupName="TransferMode" IsChecked="{Binding TransferChoice.MoveSelected}" Margin="0,0,0,8"/>
+      <RadioButton x:Name="CopyTransferOption" Content="_Copy to Files PX — keep original" GroupName="TransferMode" IsChecked="{Binding TransferChoice.CopySelected}"/>
+      <TextBlock Text="{Binding TransferChoice.Explanation}" TextWrapping="Wrap" FontSize="12" Foreground="#617586" Margin="0,10,0,0" AutomationProperties.LiveSetting="Polite"/>
+    </StackPanel></Border>
     <Label Content="Selected _folder" Target="{Binding ElementName=FolderBox}"/>
     <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Destination folder"/>
     <Label Content="File _name" Target="{Binding ElementName=NameBox}"/>

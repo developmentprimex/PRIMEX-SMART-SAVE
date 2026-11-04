@@ -3,17 +3,20 @@ using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Core.Services;
 using PrimEx.SmartSave.Desktop.Components;
+using PrimEx.SmartSave.Desktop.ViewModels;
 namespace PrimEx.SmartSave.Desktop.Views;
 
 public partial class CompanyMoveDialog : Window
 {
     private readonly IServerFolderService servers;
     private readonly ICompanyFolderPicker picker;
+    private readonly TransferChoiceViewModel choice;
     private bool busy;
     public DestinationSelection? Selection { get; private set; }
-    public CompanyMoveDialog(SaveRequest request, IServerFolderService servers, ICompanyFolderPicker picker)
+    public CompanyMoveDialog(SaveRequest request, IServerFolderService servers, ICompanyFolderPicker picker, TransferMode initialMode = TransferMode.Move)
     {
         InitializeComponent(); this.servers = servers; this.picker = picker;
+        choice = new(initialMode); DataContext = choice;
         FileNameBox.Text = request.DisplayName;
         Loaded += async (_, _) => await SelectFolderAsync(true);
     }
@@ -42,6 +45,7 @@ public partial class CompanyMoveDialog : Window
         try
         {
             string folder = FolderBox.Text, name = FileNameBox.Text;
+            var mode = choice.Mode;
             PathRules.ValidateFileName(name);
             if (!servers.IsApproved(folder)) throw new UnauthorizedAccessException();
             var status = await servers.CheckAsync(folder, true).WaitAsync(TimeSpan.FromSeconds(12));
@@ -56,7 +60,7 @@ public partial class CompanyMoveDialog : Window
                 if (choice.ShowDialog() != true) { Error.Text = "Choose a different filename or folder, or cancel."; return; }
                 conflict = choice.Choice;
             }
-            Selection = new(folder, name, DestinationKind.CompanyServer, conflict); DialogResult = true;
+            Selection = new(folder, name, DestinationKind.CompanyServer, conflict, mode); DialogResult = true;
         }
         catch (ArgumentException) { if (IsVisible) Error.Text = "Enter a valid filename."; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or TimeoutException)

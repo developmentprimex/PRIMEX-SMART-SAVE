@@ -8,6 +8,35 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 
 ## Executed
 
+Files PX Move / Copy (0.2.13, 2026-11-04): both monitored-save and
+manual/browser destination screens offer Move or Copy on the existing screen.
+Copy retains the original folder/file and publishes a verified server copy;
+Move removes the source only after verification. The selected mode is persisted
+before transfer, displayed in history and restored for a reviewed retry after
+failure/restart. Legacy journal JSON without Mode retains Move semantics.
+Intentional Copy completion has a distinct source-retained success message.
+
+Release build passed with zero warnings/errors. All 157 automated release checks
+passed: 79 core/filesystem, 46 WPF/native, 11 browser/editor JavaScript, 9
+self-contained runtime, 10 MSI and 2 editor-package checks. New coverage includes
+Copy source retention and persisted completion, duplicate processing after reload,
+unavailable-destination/restart/retry, legacy journals, both selection screens,
+and monitoring/browser Copy dialogs with hidden and minimized main windows.
+The Copy screen was rendered and visually inspected, including a long folder
+path. A read-only code review found no critical, important or minor defects.
+All 481 embedded files were extracted and SHA-256 compared with the payload.
+Actual MSI install/upgrade/uninstall and SMB/DPI/accessibility pilot gates remain
+manual; no employee installation or configuration was changed.
+
+MSI: `artifacts/staff-installer-0.2.13/PrimEx.SmartSave-0.2.13-win-x64.msi`
+(58,204,776 bytes), SHA-256
+`5a2cb895f4e5415c3d724df59d6614cae1b625ca8865e81524ce1c6812c8d878`.
+The package remains unsigned. After verifying the distributed MSI hash, removed
+0.2.12 and temporary build/extraction copies (976 generated files checked),
+retaining the current MSI, checksum, staff guide and verification reports.
+Only the 0.2.13 application MSI remains. Cleanup targets were resolved beneath
+artifacts and checked for links/private application state before removal.
+
 Final version cleanup (2026-11-04): confirmed the only remaining MSI is 0.2.12
 and its checksum matches the release record. Removed the two obsolete isolated
 VS Code host-smoke profiles left from 0.2.11 (52 files, 174,233 bytes), after

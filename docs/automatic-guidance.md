@@ -47,7 +47,7 @@ it explicitly.
 | Save in a selected subfolder | Covered only if Include subfolders is checked |
 | Save in another folder | Add that particular local folder to setup to cover it |
 | Downloads | Show the advisory; Vazhdo me Downloads leaves the file untouched and persists the choice for later saves to the same path with the same creation timestamp, including after restart |
-| Files PX | Opens the company-folder browser directly; select a folder and click Move here. It does not repeat the Files PX / Downloads question |
+| Files PX | Opens the company-folder browser directly; select a folder, choose Move or Copy and confirm. It does not repeat the Files PX / Downloads question |
 
 The company-folder step opens the native Windows Shell folder picker, with
 breadcrumb navigation, search, This PC, mapped drives and New folder. It starts
@@ -55,10 +55,15 @@ at an approved company root and adds configured roots as shortcuts. Windows
 controls its appearance and view preferences; it is a folder picker rather than
 a full standalone Explorer window. You can navigate elsewhere, but confirming
 a destination outside the configured company roots is rejected. Click Select
-Folder, then review the filename and click Move here. Existing filenames still require Keep Both or explicitly
-confirmed Replace. The folder step has **Cancel** and **Move here**; **Downloads**
+Folder, then review the filename. Since 0.2.13, select **Move to Files PX** or
+**Copy to Files PX — keep original** and click **Move here** / **Copy here**.
+Copy preserves the original in Downloads or its current folder and verifies the
+server copy. Move removes the source only after verification. Existing filenames
+still require Keep Both or explicitly confirmed Replace. **Downloads**
 appears only in the initial post-save question. Cancel leaves the source
-untouched. Manual Move a file and the explicit
+untouched. The action is recorded in history and restored for a reviewed retry.
+Later edits to the original are not synchronized with the server copy.
+Manual Move / Copy a file and the explicit
 browser-extension workflow still offer both original destination choices.
 
 This is **after-save guidance**, not a popup before every Save or Download. Office

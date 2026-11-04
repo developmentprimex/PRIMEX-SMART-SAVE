@@ -43,6 +43,13 @@ sparse/compressed layout, and every application-specific metadata type are not
 preserved by this candidate. Non-NTFS security-stream behavior needs validation.
 Disk flush and hash verification cannot guarantee remote hardware durability.
 
+Since 0.2.13, Files PX also offers explicit Copy. It uses the same verified
+publication and conflict handling, without requesting source deletion. The
+selected Move/Copy action is persisted before transfer and restored for reviewed
+retries after restart. Pre-0.2.13 journal records default to Move. Intentional Copy
+completion is distinguished from a Move that retained an undeletable source.
+This is a one-time copy; subsequent edits are not synchronized.
+
 Every queued operation is persisted before UI presentation. Transfer-in-progress
 state is persisted before starting the copy. A crash, reboot, network interruption,
 or cancellation can leave a final file or an orphan partial. On restart,

@@ -2,8 +2,9 @@ using PrimEx.SmartSave.Core.Interfaces;
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Core.Services;
 namespace PrimEx.SmartSave.Desktop.ViewModels;
-public sealed class SaveDialogViewModel(SaveRequest request, IServerFolderService servers, IPathResolver resolver) : ObservableObject
+public sealed class SaveDialogViewModel(SaveRequest request, IServerFolderService servers, IPathResolver resolver, TransferMode initialMode = TransferMode.Move) : ObservableObject
 {
+    public TransferChoiceViewModel TransferChoice { get; } = new(initialMode);
     private bool company = true, busy;
     private string folder = "", fileName = request.DisplayName, error = "";
     public string FileName { get => fileName; set => Set(ref fileName, value); }

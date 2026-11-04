@@ -17,6 +17,16 @@ Verify Replace requires two explicit choices and keeps a backup; Keep Both never
 alters an old file. Review hashes and source retention. Open/locked documents must
 fail safely. Try a multi-gigabyte file and cancel mid-copy.
 
+For 0.2.13, test both monitored saves and manual/browser placement: Files PX
+defaults to Move and offers Copy on the existing destination screen. Copy must
+leave the original in Downloads/Desktop/its source folder and publish identical
+verified bytes to the server. Move must remove only a verified source. Repeat
+Copy with Keep Both and confirmed Replace, cancel either dialog and disconnect
+the isolated test share. The original must remain on cancellation/failure. After
+a failed Copy, restart and Retry after review: Copy must still be selected.
+Confirm the history action and that later local edits do not alter the server
+copy. Check hidden/minimized main windows stay hidden/minimized in both modes.
+
 ## SMB and offline
 
 On a dedicated test share, verify UNC and mapped-drive equivalence, per-user
