@@ -8,6 +8,42 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 
 ## Executed
 
+Faster placement prompts (0.2.14, 2026-11-04): traced the delay to the default
+3-second quiet period before the existing 250 ms pending-file/exclusive-read
+check. Lowered the standard quiet period to 1 second. The watcher engine,
+partial-download filters, continued-write debounce, locks, resave suppression,
+confirmed Move/Copy and hidden/minimized main-window behavior remain intact.
+Old JSON without PromptTimingVersion upgrades a shipped 3-second value in
+memory, without rewriting the file. Other delays remain; a later explicit
+3-second value with PromptTimingVersion=1 survives normal save/reload.
+
+The packaged-agent native-window test measured 3.517 seconds before the change
+and 1.408 seconds after it, using the same legacy configuration and completed
+synthetic local save (one sample per build). This measures file-close-to-popup,
+not download duration or application lock time. See docs/performance.md and
+`artifacts/verification/prompt-timing-0.2.14.json` for scope and raw evidence.
+
+Release build passed with zero warnings/errors. All 161 automated checks passed:
+83 core/filesystem, 46 WPF/native, 11 browser/editor JavaScript, 9 self-contained
+runtime, 10 MSI and 2 editor-package checks. Four new core cases cover faster
+default latency, continued writes, legacy migration without config writes and
+custom/case-insensitive timing preservation. The packaged hidden-window test
+now exercises a real legacy delay upgrade and asserts popup latency below
+2.5 seconds on this PC. Read-only code review found no critical/important defect;
+its minor pending-documentation link was resolved. All 481 embedded files were
+extracted and SHA-256 compared with the published payload. Actual MSI install/
+upgrade/uninstall and pilot hardware/network/DPI acceptance remain manual.
+
+MSI: `artifacts/staff-installer-0.2.14/PrimEx.SmartSave-0.2.14-win-x64.msi`
+(58,212,968 bytes), SHA-256
+`191a73a6996c8b7b0901dcebc7f365a730bdf5aa6923e66c6bd7942de27c312d`.
+The package remains unsigned. After verifying the distributed hash, removed the
+previous 0.2.13 distribution and temporary build/extraction copies (976 generated
+files checked). Targets were resolved beneath artifacts and checked for links
+and private application state before removal. Only the current application MSI
+remains, alongside its checksum, staff guide and verification evidence.
+No installed application, employee configuration or Windows setting was changed.
+
 Files PX Move / Copy (0.2.13, 2026-11-04): both monitored-save and
 manual/browser destination screens offer Move or Copy on the existing screen.
 Copy retains the original folder/file and publishes a verified server copy;

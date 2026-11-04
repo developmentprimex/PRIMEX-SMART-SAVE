@@ -58,6 +58,8 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual(["*"], options["Monitoring"]["Extensions"])
         self.assertTrue(options["Monitoring"]["IgnoreDevelopmentProjects"])
         self.assertEqual([], options["Monitoring"]["ExcludedFolders"])
+        self.assertEqual(1, options["Monitoring"]["QuietSeconds"])
+        self.assertEqual(1, options["Monitoring"]["PromptTimingVersion"])
 
     def test_private_state_directory_rejected(self):
         for name in ("data", "remembered-locations", "editor-workspaces"):
@@ -126,7 +128,7 @@ class MsiTests(unittest.TestCase):
     def test_identity_and_user_scope(self):
         properties = dict(self.db.rows("SELECT `Property`, `Value` FROM `Property`", 2))
         self.assertEqual("PrimEx Smart Save", properties["ProductName"])
-        self.assertEqual("0.2.13", properties["ProductVersion"])
+        self.assertEqual("0.2.14", properties["ProductVersion"])
         self.assertNotIn(properties.get("ALLUSERS"), ("1", "2"))
         self.assertEqual("{74FC93D4-971F-4D60-8FA7-226C2AB7E5AE}", properties["UpgradeCode"])
 
@@ -151,8 +153,8 @@ class MsiTests(unittest.TestCase):
             self.assertIn(name, names)
         for name in ("portable.mode", "agent.lock", "appsettings.json", "events.jsonl"):
             self.assertNotIn(name, names)
-        self.assertIn("PrimEx.SmartSave-VSCode-0.2.13.vsix", names)
-        self.assertIn("PrimEx.SmartSave-VisualStudio-0.2.13.vsix", names)
+        self.assertIn("PrimEx.SmartSave-VSCode-0.2.14.vsix", names)
+        self.assertIn("PrimEx.SmartSave-VisualStudio-0.2.14.vsix", names)
         self.assertFalse(any(name.endswith(".pdb") for name in names))
 
     def test_uninstall_has_no_user_document_delete_rules(self):

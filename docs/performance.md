@@ -62,6 +62,39 @@ and does not change app settings or install/register anything. Its default corpu
 is `%TEMP%\PrimEx-Performance-Corpus`. It waits for tiered JIT/background collection
 to settle before its idle sample.
 
+## Prompt timing — 0.2.14
+
+The earlier download/save delay includes an intentional three-second quiet
+period in Smart Save, followed by the pending-file check (every 250 ms), an
+exclusive-read check and UI dispatch. Version 0.2.14 reduces the standard quiet
+period to one second. The watcher engine is unchanged: continued write events
+restart the wait, temporary downloads stay excluded, and files held open by a
+writer retry until they can be read exclusively. There is no extra periodic
+work while the pending queue is empty.
+
+On this Windows development PC, an automated native-window test measured the
+time from closing a newly written local file to finding its placement popup:
+
+| Build and settings | Popup delay |
+|---|---:|
+| 0.2.13, former default 3 seconds | 3.517 s |
+| 0.2.14, same old configuration upgraded to 1 second | 1.408 s |
+
+These are one sample per build, with a disposable file, a hidden main window
+and 100 ms native-window polling. They demonstrate the configured delay reduction,
+not a latency guarantee for other PCs or every save/download workflow. Both runs
+waited for MonitoringStarted before creating the file. Download duration, user
+input, and saving while an application still holds a lock are outside this
+measurement. Disk/antivirus load, UI scheduling and another open placement dialog
+can still add latency. No Windows setting, application lock or security control
+was disabled. Raw evidence: `artifacts/prompt-delay-red-runtime.txt` and
+`artifacts/prompt-delay-runtime.txt`.
+
+Old settings without PromptTimingVersion upgrade their former shipped 3-second
+value in memory; other custom delays remain. Normal settings saves include the
+version marker so a subsequent explicit 3-second choice is preserved. See
+[configuration](configuration.md) for managed timing settings.
+
 ## Checking another laptop
 
 Install 0.2.9 as the same Windows user after closing the old version via tray Exit.

@@ -62,6 +62,16 @@ the actual Downloads folder. Right-click a direct link with the extension comman
 
 ## Monitoring pilot
 
+For 0.2.14, upgrade a disposable pre-0.2.14 configuration with QuietSeconds=3
+and no PromptTimingVersion. Time a new completed ordinary download/save: the
+standard wait should be about one second plus event/UI scheduling. During a
+continuing write, partial download or application-held lock, no prompt should
+appear until eligible and unlocked. Existing documents still resave in place.
+Check custom delays other than 3 remain, and that an explicitly chosen 3-second
+delay with PromptTimingVersion=1 remains after restart and Apply. Test on pilot
+hardware under normal disk/antivirus load; a local measurement is not a latency
+guarantee for another PC or every application.
+
 The new **Automatic guidance…** screen can perform this setup without JSON editing.
 Verify cancel leaves guidance disabled, selections/root paths persist, Apply
 starts/stops watchers without restarting, and active-folder counts are accurate.

@@ -31,6 +31,15 @@ other integration options; managed configuration may require IT to change it.
 
 After setup, continue using applications normally:
 
+Since 0.2.14, the default quiet period is one second after the last file change,
+followed by an exclusive-read check (previously three seconds). Existing standard
+settings upgrade automatically on load. The pending-file check runs every 250 ms,
+so ordinary completed saves should prompt sooner. Partial downloads and files
+still changing or held open by a writer continue to wait. This timing starts
+after saving/downloading; it cannot make an unfinished download complete sooner.
+Other pending dialogs, application locks, disk/antivirus activity or a busy PC
+can add latency. See [configuration](configuration.md) for custom timing.
+
 As of 0.2.12, a save/download opens its placement prompt without showing the main
 queue behind it. If the queue is hidden or minimized, the placement dialog stands
 alone, centered on screen with a taskbar/Alt+Tab entry. Keeping, cancelling or

@@ -1,10 +1,16 @@
-# Staff MSI 0.2.13 — per-user pilot
+# Staff MSI 0.2.14 — per-user pilot
 
 The self-contained Windows x64 MSI is now built at
-`artifacts/staff-installer-0.2.13/PrimEx.SmartSave-0.2.13-win-x64.msi`.
+`artifacts/staff-installer-0.2.14/PrimEx.SmartSave-0.2.14-win-x64.msi`.
 It bundles .NET 10.0.8, so staff do not need a separate .NET installation.
 Default packaging does not include native messaging or require extension IDs;
 ordinary Teams/browser downloads are covered by opt-in folder monitoring.
+
+0.2.14 reduces the default post-save quiet period from 3 seconds to 1 second.
+The old shipped 3-second setting upgrades in memory on load. Other custom delays
+remain; once saved with PromptTimingVersion=1, a deliberate 3-second setting also
+remains. No live configuration file is edited by the installer. Partial-file
+filters, write-event debounce and exclusive-read checks remain in place.
 
 0.2.13 adds Move / Copy selection to both the monitored-save and manual/browser
 Files PX destination screens, without an extra dialog. Move remains the default;
@@ -86,7 +92,7 @@ payload. Review WiX distribution/maintenance terms for your build environment.
 
 ```
 dotnet restore extensions/visual-studio/PrimEx.SmartSave.VisualStudio.csproj
-python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.13
+python installer/build_staff.py --wix <path-to-wix.dll> --wix-ui <path-to-WixToolset.UI.wixext.dll> --output artifacts/staff-installer-0.2.14
 ```
 
 `--wix wix` uses an installed WiX CLI instead. `--offline-feed <folder>` restores
@@ -102,7 +108,7 @@ rejected. The optional PowerShell Build.ps1 wrapper calls this same builder.
 from Teams do not require manual extension setup. The exact extension defaults
 shipped in previous builds are upgraded on load; selected folders, company roots,
 startup choice and pending operations are preserved. Custom extension lists are
-retained. Exit the previous version from the tray, install 0.2.13 as the same user, reopen the
+retained. Exit the previous version from the tray, install 0.2.14 as the same user, reopen the
 installed shortcut and test with a newly downloaded file. No employee PC updates
 automatically from GitHub or from the installer on this development machine.
 

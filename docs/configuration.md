@@ -72,6 +72,17 @@ pending queue is empty. The home screen reports active watchers rather than a
 one-to-one count of selected roots. Export diagnostics includes startup indexing
 time, indexed/pending counts, process CPU time and memory without document names.
 
+Since 0.2.14, `Monitoring.QuietSeconds` defaults to 1 (valid range 1–60),
+followed by an exclusive-read check. The watcher checks pending files every
+250 ms; continued changes restart the quiet period and locked files retry.
+Old JSON without `Monitoring.PromptTimingVersion` upgrades the former shipped
+3-second value to 1 in memory, leaving the file untouched and other delays
+unchanged. Loaded/saved options include `PromptTimingVersion: 1`; this marker
+also preserves a later explicitly configured 3-second value. To intentionally
+keep the old delay in an external managed configuration, set QuietSeconds to 3
+and PromptTimingVersion to 1. No version upgrade changes selected folders,
+server roots, guidance enablement or file filters.
+
 `Monitoring.IgnoreDevelopmentProjects` defaults true, also for older JSON that
 omits the field. Recognized coding project subtrees are skipped. Set false to
 allow eligible project files again. `Monitoring.ExcludedFolders` defaults `[]`;

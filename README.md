@@ -10,7 +10,7 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.13/PrimEx.SmartSave-0.2.13-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.14/PrimEx.SmartSave-0.2.14-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
@@ -44,6 +44,11 @@ Version 0.2.13 adds **Move to Files PX** and **Copy to Files PX — keep origina
 on the existing destination screen. Copy preserves the source folder and creates
 a verified server copy. The action is recorded in history and retained for retry;
 local edits do not automatically update the server copy.
+
+Version 0.2.14 shortens the default post-save quiet period from three seconds
+to one second. Temporary downloads, continued writes and locked files still wait.
+The old shipped delay upgrades automatically when loading settings; custom delays
+are preserved. See [prompt timing](docs/performance.md#prompt-timing--0214).
 
 ## Build and run
 

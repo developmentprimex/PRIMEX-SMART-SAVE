@@ -192,7 +192,9 @@ class StaffRuntimeTests(unittest.TestCase):
             self.write_settings(data)
             settings = data / "appsettings.json"
             options = json.loads(settings.read_text())
-            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], QuietSeconds=1)
+            # Simulate upgrading a staff configuration with the former shipped delay.
+            options["Monitoring"].update(Enabled=True, Folders=[str(watched)], QuietSeconds=3)
+            options["Monitoring"].pop("PromptTimingVersion", None)
             settings.write_text(json.dumps(options))
             process = self.launch(data)
             try:
@@ -200,6 +202,7 @@ class StaffRuntimeTests(unittest.TestCase):
                 self.assertEqual([], visible_windows(process.pid))
                 document = watched / "normal.pdf"
                 document.write_text("synthetic ordinary download")
+                saved_at = time.perf_counter()
                 prompt = None
                 for _ in range(100):
                     windows = visible_windows(process.pid)
@@ -210,6 +213,9 @@ class StaffRuntimeTests(unittest.TestCase):
                     self.assertIsNone(process.poll())
                     time.sleep(0.1)
                 self.assertIsNotNone(prompt)
+                latency = time.perf_counter() - saved_at
+                print(f"PROMPT_LATENCY_SECONDS={latency:.3f}", flush=True)
+                self.assertLess(latency, 2.5, "A completed local save should not wait for the former 3-second delay")
                 user32.PostMessageW(prompt, 0x0010, 0, 0)  # WM_CLOSE: dismiss this isolated test prompt.
                 for _ in range(60):
                     requests = [json.loads(path.read_text()) for path in (data / "operations").glob("*.json")]

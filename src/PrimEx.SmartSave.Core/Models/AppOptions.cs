@@ -21,6 +21,7 @@ public sealed class AppOptions
         if (CompanyServer.ApprovedRoots == null || Browser.AllowedExtensionIds == null || Browser.DownloadsFolder == null || Monitoring.Folders == null || Monitoring.ExcludedFolders == null || Monitoring.Extensions == null || CompanyServer.ApprovedRoots.Any(x => x == null) || Browser.AllowedExtensionIds.Any(x => x == null) || Monitoring.Folders.Any(x => x == null) || Monitoring.ExcludedFolders.Any(x => x == null) || Monitoring.Extensions.Any(x => x == null))
             return ["Configuration collections and folder values cannot be null."];
         if (Monitoring.QuietSeconds is < 1 or > 60) errors.Add("Monitoring.QuietSeconds must be between 1 and 60.");
+        if (Monitoring.PromptTimingVersion != 1) errors.Add("Unsupported Monitoring.PromptTimingVersion.");
         if (Monitoring.ExcludedFolders.Any(string.IsNullOrWhiteSpace)) errors.Add("Excluded folders must be nonempty absolute paths.");
         if (!Services.MonitoringFileTypes.IsValid(Monitoring.Extensions)) errors.Add("Monitoring.Extensions must be [\"*\"] for all file types, or a list such as [\".pdf\", \".png\"].");
         if (!SmartSave.AllowOutsideServer) errors.Add("Outside-server saving must remain available in this edition.");
@@ -40,11 +41,21 @@ public sealed class AppOptions
     }
     public static AppOptions Load(string path)
     {
-        var options = JsonSerializer.Deserialize<AppOptions>(File.ReadAllText(path), new JsonSerializerOptions { PropertyNameCaseInsensitive = true, UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow }) ?? throw new InvalidDataException("Empty configuration.");
+        string json = File.ReadAllText(path);
+        var options = JsonSerializer.Deserialize<AppOptions>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow }) ?? throw new InvalidDataException("Empty configuration.");
         // Upgrade only the two exact default lists shipped previously. Custom filters,
         // selected folders, server roots and enablement are preserved. No file is rewritten.
         if (options.Monitoring?.Extensions is { } extensions && Services.MonitoringFileTypes.IsLegacyDefault(extensions))
             options.Monitoring.Extensions = ["*"];
+        // Upgrade the old shipped delay in memory. Persisting the timing version
+        // lets a later explicit 3-second choice survive subsequent loads.
+        if (options.Monitoring is { QuietSeconds: 3 } monitoring)
+        {
+            using var document = JsonDocument.Parse(json);
+            var section = document.RootElement.EnumerateObject().LastOrDefault(p => p.Name.Equals("Monitoring", StringComparison.OrdinalIgnoreCase)).Value;
+            if (section.ValueKind == JsonValueKind.Object && !section.EnumerateObject().Any(p => p.Name.Equals("PromptTimingVersion", StringComparison.OrdinalIgnoreCase)))
+                monitoring.QuietSeconds = 1;
+        }
         var errors = options.Validate();
         if (errors.Count > 0) throw new InvalidDataException(string.Join(Environment.NewLine, errors));
         return options;
@@ -79,7 +90,8 @@ public sealed class MonitoringOptions
     public bool IgnoreDevelopmentProjects { get; set; } = true;
     public bool IncludeSubdirectories { get; set; }
     public string[] Extensions { get; set; } = ["*"];
-    public int QuietSeconds { get; set; } = 3;
+    public int QuietSeconds { get; set; } = 1;
+    public int PromptTimingVersion { get; set; } = 1;
 }
 public sealed class LoggingOptions
 {

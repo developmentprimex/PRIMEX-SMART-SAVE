@@ -151,6 +151,36 @@ try
         string path = Path.Combine(root, "custom-types.json"); File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(options));
         Assert(AppOptions.Load(path).Monitoring.Extensions.SequenceEqual(new[] { ".pdf", ".png" }));
     }));
+    await Test("Legacy three-second prompt delay upgrades once without changing other settings", () => Sync(() => {
+        var legacy = new AppOptions { StartWithWindows = false, GuidanceSetupCompleted = true };
+        legacy.Monitoring.Enabled = true; legacy.Monitoring.Folders = [root]; legacy.Monitoring.QuietSeconds = 3;
+        legacy.Monitoring.Extensions = [".png"]; legacy.CompanyServer.ApprovedRoots = [@"\\test\share"];
+        var json = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(legacy))!;
+        json["Monitoring"]!.AsObject().Remove("PromptTimingVersion");
+        string path = Path.Combine(root, "legacy-delay.json"), original = json.ToJsonString(); File.WriteAllText(path, original);
+        var loaded = AppOptions.Load(path);
+        Assert(loaded.Monitoring.QuietSeconds == 1 && File.ReadAllText(path) == original);
+        Assert(loaded.Monitoring.Enabled && loaded.Monitoring.Folders.Single() == root && loaded.Monitoring.Extensions.Single() == ".png");
+        Assert(!loaded.StartWithWindows && loaded.GuidanceSetupCompleted && loaded.CompanyServer.ApprovedRoots.Single() == @"\\test\share");
+        // Once the upgraded options are saved, an explicitly selected 3-second delay is retained.
+        loaded.Monitoring.QuietSeconds = 3; File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(loaded));
+        Assert(AppOptions.Load(path).Monitoring.QuietSeconds == 3);
+    }));
+    await Test("Custom legacy quiet periods and case-insensitive settings survive delay upgrade", () => Sync(() => {
+        foreach (int seconds in new[] { 1, 2, 5, 60 })
+        {
+            var json = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(new AppOptions()))!;
+            var monitoring = json["Monitoring"]!.DeepClone(); monitoring.AsObject().Remove("PromptTimingVersion"); monitoring["QuietSeconds"] = seconds;
+            json.AsObject().Remove("Monitoring"); json["monitoring"] = monitoring;
+            string path = Path.Combine(root, "custom-delay-" + seconds + ".json"), original = json.ToJsonString(); File.WriteAllText(path, original);
+            Assert(AppOptions.Load(path).Monitoring.QuietSeconds == seconds && File.ReadAllText(path) == original);
+        }
+        var tuned = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(new AppOptions()))!;
+        tuned["Monitoring"]!["QuietSeconds"] = 3; tuned["Monitoring"]!["prompttimingversion"] = 1;
+        tuned["Monitoring"]!.AsObject().Remove("PromptTimingVersion");
+        string tunedPath = Path.Combine(root, "tuned-delay.json"); File.WriteAllText(tunedPath, tuned.ToJsonString());
+        Assert(AppOptions.Load(tunedPath).Monitoring.QuietSeconds == 3);
+    }));
     await Test("Agent instance lease detects a duplicate and releases cleanly", () => Sync(() => {
         string data = Path.Combine(root, "instance"); Directory.CreateDirectory(data);
         using (var first = AgentInstanceLease.TryAcquire(data)) { Assert(first != null); using var second = AgentInstanceLease.TryAcquire(data); Assert(second == null); }
@@ -233,6 +263,26 @@ try
     await Test("Whole-drive monitoring rejected", () => Sync(() => {
         var options = new AppOptions(); options.Monitoring.Folders = [Path.GetPathRoot(root)!]; Assert(options.Validate().Count > 0);
     }));
+    await Test("Default watcher offers a completed new save within two and a half seconds", async () => {
+        string watched = Path.Combine(root, "fast-prompt"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched];
+        var offered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += path => offered.TrySetResult(path); await monitor.StartAsync();
+        string document = Path.Combine(watched, "completed.pdf"); File.WriteAllText(document, "complete");
+        Assert(await offered.Task.WaitAsync(TimeSpan.FromSeconds(2.5)) == document);
+    });
+    await Test("Faster default waits while a new document keeps changing", async () => {
+        string watched = Path.Combine(root, "fast-prompt-writing"); Directory.CreateDirectory(watched);
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched];
+        var offered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var monitor = new DirectoryMonitor(options, log); monitor.Candidate += path => offered.TrySetResult(path); await monitor.StartAsync();
+        string document = Path.Combine(watched, "still-saving.pdf");
+        for (int part = 0; part < 7; part++)
+        {
+            File.AppendAllText(document, "next part\n"); await Task.Delay(250); Assert(!offered.Task.IsCompleted);
+        }
+        Assert(await offered.Task.WaitAsync(TimeSpan.FromSeconds(2.5)) == document);
+    });
     await Test("Opt-in watcher ignores temporary files, debounces saves, waits for locks", async () => {
         string watched = Path.Combine(root, "watched"); Directory.CreateDirectory(watched);
         var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.Folders = [watched]; options.Monitoring.QuietSeconds = 1;
