@@ -1,4 +1,4 @@
-# Validation record — 2026-11-04
+# Validation record — 2026-11-05
 
 This is a tested implementation candidate, **not production acceptance**.
 
@@ -7,6 +7,36 @@ WPF available, Node 24.12.0. Repository was empty. Office inventory reports
 Office 2024 Retail x64 16.0.17928.20148; that does not establish integration compatibility.
 
 ## Executed
+
+Visible placement prompts (0.2.16, 2026-11-05): background-triggered destination
+dialogs now use Topmost for their lifetime, open in Normal state with ShowActivated,
+and request activation after rendering. The main queue retains its hidden or
+minimized state. Standalone dialogs retain WPF CenterScreen (cursor monitor);
+visible owners retain CenterOwner. This uses the normal topmost z-order rather
+than input injection or repeated focus stealing. Other topmost windows and the
+Windows secure desktop are outside this guarantee.
+
+Before the fix, the strengthened real-WPF suite failed 18 visibility scenarios
+(39 passed); after the fix all 57 passed. These include native WS_EX_TOPMOST and
+IsIconic checks for monitoring, Files PX Move/Copy and explicit browser dialogs
+with hidden/minimized main windows, plus topmost checks with a visible owner.
+The self-contained background-process suite passed all 9 tests: its actual
+download prompt was visible, not iconic, and had WS_EX_TOPMOST. Latency was
+1.342 seconds in this local run. Explicit local confirmation closed it, kept
+the source, and left the main queue hidden. Release build passed with zero
+warnings/errors; 83 core and 11 JavaScript checks passed, as did 4 installer
+source checks and 2 packaged editor-link checks. Read-only code review found no
+important issue. Real native picker z-order, competing topmost applications,
+multiple monitors/mixed DPI and full MSI install/upgrade remain manual acceptance.
+
+The 0.2.16 MSI passed all 10 package checks, including extraction and SHA-256
+comparison of all 481 embedded files. Together with the suites above, all 172
+checks passed. Staff package:
+`artifacts/staff-installer-0.2.16/PrimEx.SmartSave-0.2.16-win-x64.msi`, SHA-256
+`b5efa46cdc72c108695c9d94e69fdc665720c61973da6301fd6a3648eccd86af`.
+The package, checksum and current staff guide were copied into the distribution
+folder and the MSI hash rechecked. No installed application or user settings
+were changed; existing machines need the new installer.
 
 Required destination choice and actual local-folder labels (0.2.15, 2026-11-04):
 placement windows hide the title-bar Close control and block dismissal without

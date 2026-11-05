@@ -10,7 +10,7 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.15/PrimEx.SmartSave-0.2.15-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.16/PrimEx.SmartSave-0.2.16-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
@@ -55,6 +55,13 @@ has no Close button and cannot be dismissed with Escape/Alt+F4. The local option
 uses the actual selected folder, such as Desktop or Downloads, with its full
 path shown. Back/cancelling a company-folder selection returns to the choices;
 local saving remains available. Monitoring coverage still follows selected folders.
+
+Version 0.2.16 keeps placement dialogs above ordinary application windows until
+the destination choice is completed, so background downloads cannot leave only
+a taskbar entry behind the browser. Dialogs open in the normal state and request
+activation after rendering. Standalone prompts center on the cursor's screen;
+visible owners retain centered child dialogs. The main queue stays in the tray
+or minimized when an automatic prompt opens.
 
 ## Build and run
 

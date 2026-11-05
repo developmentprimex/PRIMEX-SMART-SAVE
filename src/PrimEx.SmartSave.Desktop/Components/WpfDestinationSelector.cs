@@ -15,6 +15,14 @@ public sealed class WpfDestinationSelector(IServerFolderService servers, IPathRe
         dialog.Owner = VisibleOwner;
         dialog.WindowStartupLocation = dialog.Owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
         dialog.ShowInTaskbar = dialog.Owner == null;
+        // Watcher/native-pipe callbacks run in the background. Windows may refuse
+        // foreground activation, so Activate/ShowDialog alone can leave the choice
+        // behind the browser. Keep only the placement dialog above ordinary apps
+        // for its lifetime; never promote or restore the main queue.
+        dialog.Topmost = true;
+        dialog.ShowActivated = true;
+        dialog.WindowState = WindowState.Normal;
+        dialog.ContentRendered += (_, _) => { dialog.WindowState = WindowState.Normal; dialog.Activate(); };
         return dialog;
     }
     public Task<DestinationSelection?> SelectAsync(SaveRequest request, CancellationToken cancellationToken = default, TransferMode initialMode = TransferMode.Move)

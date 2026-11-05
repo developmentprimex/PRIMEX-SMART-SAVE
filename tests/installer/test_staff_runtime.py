@@ -217,6 +217,10 @@ class StaffRuntimeTests(unittest.TestCase):
                 print(f"PROMPT_LATENCY_SECONDS={latency:.3f}", flush=True)
                 self.assertLess(latency, 2.5, "A completed local save should not wait for the former 3-second delay")
                 user32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+                user32.IsIconic.argtypes = [wintypes.HWND]
+                self.assertFalse(user32.IsIconic(prompt), "Placement prompt must open restored")
+                self.assertNotEqual(0, user32.GetWindowLongW(prompt, -20) & 0x00000008,
+                                    "Background download prompt must stay above the browser, not just appear in the taskbar")
                 self.assertEqual(0, user32.GetWindowLongW(prompt, -16) & 0x00080000)  # No title-bar Close button.
                 user32.PostMessageW(prompt, 0x0010, 0, 0)  # WM_CLOSE must not dismiss without a choice.
                 time.sleep(0.2)

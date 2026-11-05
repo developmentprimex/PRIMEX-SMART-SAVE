@@ -367,6 +367,10 @@ internal static class Program
                         foreach (var window in dialogs)
                         {
                             if (window.Owner != null || !window.ShowInTaskbar || window.WindowStartupLocation != WindowStartupLocation.CenterScreen) invalidPresentation = true;
+                            // A taskbar entry alone can leave a background-triggered prompt behind the browser.
+                            var handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                            if (!window.Topmost || !window.ShowActivated || window.WindowState != WindowState.Normal
+                                || (GetWindowLong(handle, -20) & 0x00000008) == 0 || IsIconic(handle)) invalidPresentation = true;
                             if (window is PostSaveDialog prompt)
                             {
                                 if (!promptSeen)
@@ -458,6 +462,7 @@ internal static class Program
                         if (Application.Current.Windows.OfType<PostSaveDialog>().FirstOrDefault(x => x.IsVisible) is { } prompt && prompts.Add(prompt))
                         {
                             Assert(prompt.Owner == owner && !prompt.ShowInTaskbar && !prompt.KeepChosen);
+                            Assert(prompt.Topmost && prompt.ShowActivated && prompt.WindowState == WindowState.Normal);
                             Assert(((Border)prompt.FindName("WarningPanel")).Visibility == Visibility.Collapsed);
                             Assert(!remembered.Contains(source));
                             if (scenario == "Close") { prompt.Close(); Assert(prompt.IsVisible && !prompt.KeepChosen); }
@@ -664,6 +669,11 @@ internal static class Program
     }
     [DllImport("user32.dll", EntryPoint = "SendMessageW")]
     private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong(IntPtr window, int index);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsIconic(IntPtr window);
     private sealed class SelectedDestinationSelector(DestinationSelection selection) : IDestinationSelector
     {
         public TransferMode? LastInitialMode { get; private set; }
