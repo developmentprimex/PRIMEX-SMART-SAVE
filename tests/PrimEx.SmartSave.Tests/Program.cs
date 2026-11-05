@@ -26,6 +26,70 @@ TransferRequest Request(string source, string dest, TransferMode mode = Transfer
 string NewFile(string content = "test document") { string path = Path.Combine(root, Guid.NewGuid() + ".txt"); File.WriteAllText(path, content); return path; }
 try
 {
+    await Test("Monitoring accepts explicitly selected local drive roots and still rejects UNC scopes", () => Sync(() => {
+        var options = new AppOptions(); options.Monitoring.Enabled = true; options.Monitoring.IncludeSubdirectories = true;
+        options.Monitoring.Folders = [@"C:\", @"D:\"];
+        Assert(options.Validate().Count == 0);
+        string config = Path.Combine(root, "whole-drive.json");
+        File.WriteAllText(config, System.Text.Json.JsonSerializer.Serialize(options));
+        Assert(AppOptions.Load(config).Monitoring.Folders.SequenceEqual(options.Monitoring.Folders));
+        options.Monitoring.Folders = [@"\\server\share"];
+        Assert(options.Validate().Count > 0);
+        options.Monitoring.Folders = ["//server/share"];
+        Assert(options.Validate().Count > 0);
+    }));
+    await Test("Whole-drive filtering skips system trees but preserves ordinary documents and nested lookalikes", () => Sync(() => {
+        var options = new AppOptions(); options.Monitoring.Folders = [@"C:\", @"D:\"]; options.Monitoring.IncludeSubdirectories = true;
+        options.Monitoring.IgnoreDevelopmentProjects = false;
+        var policy = new EligibleFilePolicy(options);
+        foreach (string folder in new[] { "Windows", "Windows.old", "Program Files", "Program Files (x86)", "ProgramData", "Recovery", "PerfLogs", "Temp", "tmp", "MSOCache" })
+        foreach (string drive in new[] { @"C:\", @"D:\" })
+        {
+            string file = Path.Combine(drive, folder, "nested", "document.pdf");
+            Assert(!policy.CanBeEligible(file) && policy.IsSuppressed(file));
+            Assert(!policy.CanBeEligible(file.ToUpperInvariant().Replace('\\', '/')));
+        }
+        foreach (string file in new[] { @"C:\report.pdf", @"C:\Users\Admin\Downloads\report.pdf", @"D:\Puna\report.docx", @"C:\Users\Admin\Windows\report.pdf", @"D:\Puna\Program Files\report.pdf", @"D:\Program Files notes\report.pdf" })
+            Assert(policy.CanBeEligible(file) && !policy.IsSuppressed(file));
+        options.Monitoring.ExcludedFolders = [@"D:\Private"];
+        Assert(!policy.CanBeEligible(@"D:\Private\report.pdf"));
+        options.Monitoring.IncludeSubdirectories = false;
+        Assert(policy.CanBeEligible(@"C:\report.pdf") && !policy.CanBeEligible(@"C:\Users\Admin\report.pdf"));
+    }));
+    await Test("Startup prunes relocated system trees while indexing ordinary neighboring documents", () => Sync(() => {
+        string watched = Path.Combine(root, "system-policy"), system = Path.Combine(watched, "relocated-system");
+        Directory.CreateDirectory(Path.Combine(system, "nested"));
+        string ordinary = Path.Combine(watched, "report.pdf"); File.WriteAllText(ordinary, "ordinary");
+        string protectedFile = Path.Combine(system, "nested", "system.pdf"); File.WriteAllText(protectedFile, "system");
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true;
+        var policy = new EligibleFilePolicy(options, protectedDirectories: new SystemDirectoryPolicy([system]));
+        Assert(policy.EnumerateExistingFiles(watched).SequenceEqual(new[] { ordinary }));
+        Assert(!policy.EnumerateExistingFiles(system).Any());
+        Assert(!policy.CanBeEligible(protectedFile) && policy.IsSuppressed(protectedFile));
+        string neighbor = system + "-documents"; Directory.CreateDirectory(neighbor);
+        string neighboringDocument = Path.Combine(neighbor, "new.pdf"); File.WriteAllText(neighboringDocument, "ordinary");
+        Assert(policy.IsEligible(neighboringDocument));
+    }));
+    await Test("A directory removed during the baseline does not abort the remaining scope", () => Sync(() => {
+        string watched = Path.Combine(root, "baseline-directory-race"); Directory.CreateDirectory(watched);
+        string transient = Path.Combine(watched, "a-transient"), stable = Path.Combine(watched, "b-stable");
+        Directory.CreateDirectory(transient); Directory.CreateDirectory(stable);
+        File.WriteAllText(Path.Combine(transient, "old.pdf"), "removed during indexing");
+        string retained = Path.Combine(stable, "retained.pdf"); File.WriteAllText(retained, "stable baseline");
+        string checkpoint = Path.Combine(watched, "z-checkpoint.pdf"); File.WriteAllText(checkpoint, "checkpoint");
+        var options = new AppOptions(); options.Monitoring.Folders = [watched]; options.Monitoring.IncludeSubdirectories = true;
+        var baseline = new List<string>();
+        foreach (string file in new EligibleFilePolicy(options).EnumerateExistingFiles(watched))
+        {
+            baseline.Add(file);
+            if (file == checkpoint) Directory.Delete(transient, true);
+        }
+        Assert(baseline.Contains(checkpoint) && baseline.Contains(retained));
+        bool missingRootRejected = false;
+        try { new EligibleFilePolicy(options).EnumerateExistingFiles(Path.Combine(watched, "missing-root")).ToArray(); }
+        catch (DirectoryNotFoundException) { missingRootRejected = true; }
+        Assert(missingRootRejected);
+    }));
     await Test("UNC containment uses component boundaries", () => Sync(() => {
         Assert(PathRules.IsWithin(@"\\server\share\a", @"\\server\share"));
         Assert(!PathRules.IsWithin(@"\\server\share-other", @"\\server\share"));
@@ -260,8 +324,8 @@ try
         bool denied = false; try { ConfigurationStore.Save(path, new AppOptions(), "original"); } catch (InvalidDataException) { denied = true; }
         Assert(denied && File.ReadAllText(path) == "changed by another editor");
     }));
-    await Test("Whole-drive monitoring rejected", () => Sync(() => {
-        var options = new AppOptions(); options.Monitoring.Folders = [Path.GetPathRoot(root)!]; Assert(options.Validate().Count > 0);
+    await Test("Network watch scopes remain rejected even while monitoring is disabled", () => Sync(() => {
+        var options = new AppOptions(); options.Monitoring.Folders = [@"\\server\share"]; Assert(options.Validate().Count > 0);
     }));
     await Test("Default watcher offers a completed new save within two and a half seconds", async () => {
         string watched = Path.Combine(root, "fast-prompt"); Directory.CreateDirectory(watched);

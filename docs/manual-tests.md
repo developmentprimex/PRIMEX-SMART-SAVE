@@ -7,6 +7,17 @@ All manual gates below remain unexecuted unless explicitly listed in validation.
 
 ## Windows and local files
 
+For 0.2.17, add the local C drive in Automatic guidance, verify its checkbox is
+labeled `C:\`, keep Include subfolders enabled and Apply. Check the preparing
+status changes to ON after the baseline completes. Save new disposable documents
+at the drive root and in an ordinary authorized work folder; each should receive
+guidance once. Existing documents should stay in place when resaved. Confirm
+system/application/cache/project/custom exclusions do not prompt; do not create
+test files inside Windows or Program Files. Cancel setup without changing its
+live scope, and reopen after restart to verify saved drive/recursion choices.
+Test a large drive during ordinary folder creation/deletion and record startup,
+CPU/memory and overflow diagnostics. UNC and mapped-network scopes remain rejected.
+
 For 0.2.15, verify the placement title/local button/path and advisory confirmation
 for Desktop, Downloads, a custom folder, duplicate folder names in different
 parents, underscores and long names. No title-bar X is available; window Close,
@@ -17,7 +28,7 @@ keeping explicitly and verify no copy/rename/self-conflict occurs. In manual/
 browser placement, browse a new local folder and verify its label follows it;
 explicit staged browser downloads must use the configured local target rather
 than the internal staging job. Existing selected monitoring folders determine
-coverage; no entire-drive watcher is added. Confirm Windows sign-out/shutdown
+coverage; no entire-drive watcher is added automatically. Confirm Windows sign-out/shutdown
 is possible and an interrupted decision stays Pending without local consent.
 
 Start as a normal user on Windows 11. Confirm one instance/data directory, tray

@@ -8,6 +8,43 @@ Office 2024 Retail x64 16.0.17928.20148; that does not establish integration com
 
 ## Executed
 
+Whole local drive selection (0.2.17, 2026-11-05): explicitly selected local drive
+roots now validate, save and reopen in Automatic guidance. A previously empty
+drive checkbox label now displays `C:\`; the existing recursive-scope checkbox
+still controls subfolders. UNC shares (including slash spelling) and mapped
+network watch scopes remain rejected. No drive is selected automatically.
+The shared SystemDirectoryPolicy protects standard drive-root OS/application,
+recovery and temporary trees and actual Windows/program/common-data locations.
+Startup enumeration prunes them; live events and queued automatic prompts use
+the same policy. Ordinary nested folders named Windows/Program Files remain
+eligible. Existing cache/project/company/user/reparse exclusions remain active.
+
+The initial red run had 2 expected new core failures and 1 WPF validation
+failure. Updated the obsolete test expecting drive rejection to assert continued
+network rejection. A fresh reviewer identified a queued-directory deletion race
+that could prevent an entire drive watcher from starting. A disposable fixture
+reproduced DirectoryNotFoundException; descendant-only enumeration recovery now
+retains neighboring baseline files while selected-root failures still propagate.
+The reviewer checked the fix, iterator disposal and cancellation with no further
+findings. Custom TEMP locations outside AppData and the anchored Temp/tmp trees
+are not automatically protected just because they are the TEMP environment path.
+
+Release build: zero warnings/errors. All 176 checks passed: 87 core/filesystem,
+57 WPF/native, 11 JavaScript, 9 self-contained runtime, 10 MSI and 2 editor-package
+checks. Setup drive acceptance/persistence was tested without starting a real
+whole-drive watcher. Protected paths, case/slash variants, component boundaries,
+relocated-tree baseline pruning, custom exclusions and nonrecursive scope were
+checked. The setup render with the labeled drive and new hint was visually
+inspected. Background prompt latency was 1.327 seconds in the packaged test.
+All 481 MSI embedded files were extracted and hash-compared with the payload.
+
+Staff MSI: `artifacts/staff-installer-0.2.17/PrimEx.SmartSave-0.2.17-win-x64.msi`,
+SHA-256 `3d31de4304972cd7ed8053bed9e9a55d7696eaeede1031be3978a16537a99c0f`.
+The distribution copy's hash was rechecked. The package remains unsigned; no
+installed application, employee configuration or live C-drive monitoring scope
+was changed. Whole-drive startup time, sustained event volume/overflow handling
+and actual MSI installation/upgrade on employee machines remain manual gates.
+
 Visible placement prompts (0.2.16, 2026-11-05): background-triggered destination
 dialogs now use Topmost for their lifetime, open in Normal state with ShowActivated,
 and request activation after rendering. The main queue retains its hidden or

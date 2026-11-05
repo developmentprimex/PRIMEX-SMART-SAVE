@@ -50,7 +50,7 @@ public sealed class AutomaticGuidanceViewModel : ObservableObject
         path = PathRules.NormalizeAbsolute(path);
         var prior = Folders.FirstOrDefault(x => x.Path.Equals(path, StringComparison.OrdinalIgnoreCase));
         if (prior != null) { prior.Selected = selected; return; }
-        Folders.Add(new(label, path, selected));
+        Folders.Add(new(string.IsNullOrWhiteSpace(label) ? path : label, path, selected));
     }
     public AppOptions CreateOptions()
     {

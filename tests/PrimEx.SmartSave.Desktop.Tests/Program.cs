@@ -163,6 +163,7 @@ internal static class Program
                 wizard.Loaded += (_, _) => {
                     var model = (AutomaticGuidanceViewModel)wizard.DataContext;
                     model.Folders.Clear(); model.AddFolder("Test downloads", root); model.Enabled = true;
+                    model.AddFolder("", Path.GetPathRoot(root)!, selected: false);
                     model.IncludeSubdirectories = true;
                     wizard.UpdateLayout();
                     string output = Path.GetFullPath("artifacts/verification"); Directory.CreateDirectory(output);
@@ -212,13 +213,23 @@ internal static class Program
                 bool rejected = false; try { model.CreateOptions(); } catch (InvalidDataException) { rejected = true; }
                 Assert(rejected && !options.Monitoring.Enabled); await Task.CompletedTask;
             });
-            await Test("Automatic setup rejects missing folders and whole-drive monitoring", async () => {
+            await Test("Automatic setup accepts a labeled local drive without starting a watcher and rejects missing folders", async () => {
                 var model = new AutomaticGuidanceViewModel(options, []) { Enabled = true };
                 model.AddFolder("Missing", Path.Combine(root, "missing"));
                 bool missing = false; try { model.CreateOptions(); } catch (InvalidDataException) { missing = true; }
-                Assert(missing); model.Folders.Clear(); model.AddFolder("Entire drive", Path.GetPathRoot(root)!);
-                bool rejected = false; try { model.CreateOptions(); } catch (InvalidDataException) { rejected = true; }
-                Assert(rejected); await Task.CompletedTask;
+                Assert(missing); model.Folders.Clear();
+                string drive = Path.GetPathRoot(root)!;
+                model.AddFolder("", drive); model.IncludeSubdirectories = true;
+                var updated = model.CreateOptions();
+                Assert(updated.Monitoring.Folders.Single() == drive && updated.Monitoring.IncludeSubdirectories);
+                Assert(model.Folders.Single().Label == drive);
+                string saved = Path.Combine(root, "whole-drive-setup.json");
+                File.WriteAllText(saved, JsonSerializer.Serialize(updated));
+                var reopened = new AutomaticGuidanceViewModel(AppOptions.Load(saved), []);
+                Assert(reopened.Folders.Single().Label == drive && reopened.IncludeSubdirectories);
+                model.IncludeSubdirectories = false;
+                Assert(!model.CreateOptions().Monitoring.IncludeSubdirectories);
+                await Task.CompletedTask;
             });
             await Test("Known folder suggestions are absolute and do not create directories", async () => {
                 var suggestions = KnownFolderService.GetSuggestions();

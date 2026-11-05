@@ -10,7 +10,7 @@ not implemented or certified. A self-contained Windows x64 staff MSI is built;
 full install/upgrade/uninstall acceptance remains pending. This
 candidate does not yet meet all production acceptance criteria.
 
-For staff PCs, use `artifacts/staff-installer-0.2.16/PrimEx.SmartSave-0.2.16-win-x64.msi`
+For staff PCs, use `artifacts/staff-installer-0.2.17/PrimEx.SmartSave-0.2.17-win-x64.msi`
 and [the staff installation guide](installer/STAFF-INSTALL-SQ.md). It includes
 .NET, creates shortcuts and registers launch at sign-in. The installed build
 opens configuration on first use, with monitoring disabled until explicitly
@@ -62,6 +62,12 @@ a taskbar entry behind the browser. Dialogs open in the normal state and request
 activation after rendering. Standalone prompts center on the cursor's screen;
 visible owners retain centered child dialogs. The main queue stays in the tray
 or minimized when an automatic prompt opens.
+
+Version 0.2.17 allows selecting a whole local drive, such as `C:\`, in Automatic
+guidance. Enable Include subfolders for coverage throughout the drive. Windows,
+Program Files, ProgramData, recovery and system temporary trees are automatically
+excluded, alongside existing cache/project/user exclusions. Drive selection is
+explicit; UNC shares and mapped network drives remain unsupported watch scopes.
 
 ## Build and run
 

@@ -1,5 +1,8 @@
 ﻿# Exact source-file inventory
 
+- `src/PrimEx.SmartSave.Monitoring/Watchers/SystemDirectoryPolicy.cs`
+- `docs/superpowers/specs/2026-11-05-whole-drive-design.md`
+- `docs/superpowers/plans/2026-11-05-whole-drive.md`
 - `docs/editor-integrations.md`
 - `src/PrimEx.SmartSave.Desktop/Components/RequiredDestinationChoice.cs`
 - `src/PrimEx.SmartSave.Desktop/ViewModels/LocalFolderDisplay.cs`

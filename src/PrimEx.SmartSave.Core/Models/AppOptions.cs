@@ -35,7 +35,7 @@ public sealed class AppOptions
             try { Services.PathRules.NormalizeAbsolute(root); } catch (ArgumentException) { errors.Add("Configured folders must be absolute Windows or UNC paths without traversal."); }
         if (Browser.Enabled && Browser.DownloadsFolder.Length == 0) errors.Add("Browser.DownloadsFolder is required when browser integration is enabled.");
         if (Monitoring.Enabled && Monitoring.Folders.Length == 0) errors.Add("Monitoring requires explicit folders.");
-        if (Monitoring.Folders.Any(x => x.StartsWith(@"\\") || string.Equals(Path.GetPathRoot(x)?.TrimEnd('\\'), x.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))) errors.Add("Monitor named local directories, not network roots or entire drives.");
+        if (Monitoring.Folders.Any(x => x.Replace('/', '\\').StartsWith(@"\\"))) errors.Add("Monitor local folders or drives, not network shares.");
         if (Office.Enabled) errors.Add("Office interception is not enabled in this candidate; see docs/office.md.");
         return errors;
     }

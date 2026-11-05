@@ -1,12 +1,14 @@
 using PrimEx.SmartSave.Core.Models;
 using PrimEx.SmartSave.Core.Services;
 namespace PrimEx.SmartSave.Monitoring.Watchers;
-public sealed class EligibleFilePolicy(AppOptions options, EditorWorkspaceRegistry? editorWorkspaces = null)
+public sealed class EligibleFilePolicy(AppOptions options, EditorWorkspaceRegistry? editorWorkspaces = null, SystemDirectoryPolicy? protectedDirectories = null)
 {
     private readonly DevelopmentProjectPolicy projects = new();
+    private readonly SystemDirectoryPolicy systemDirectories = protectedDirectories ?? new();
     public void ObserveChange(string path)
     {
         if (!DevelopmentProjectPolicy.IsMarkerName(Path.GetFileName(path))) return;
+        if (systemDirectories.IsExcluded(path)) return;
         var root = options.Monitoring.Folders.Where(root => PathRules.IsWithin(path, root)).OrderBy(root => root.Length).FirstOrDefault();
         // Dependency installs can create thousands of package.json files inside
         // ignored trees; they must not repeatedly invalidate real project roots.
@@ -14,6 +16,7 @@ public sealed class EligibleFilePolicy(AppOptions options, EditorWorkspaceRegist
         projects.ObserveChange(path);
     }
     public bool IsSuppressed(string path, bool directory = false) =>
+        systemDirectories.IsExcluded(path) ||
         options.Monitoring.ExcludedFolders.Any(root => PathRules.IsWithin(path, root)) ||
         options.Monitoring.IgnoreDevelopmentProjects && (editorWorkspaces?.Contains(path) == true || projects.IsProject(directory ? path : Path.GetDirectoryName(path)!));
     private static readonly HashSet<string> CacheFolders = new(StringComparer.OrdinalIgnoreCase)
@@ -26,6 +29,7 @@ public sealed class EligibleFilePolicy(AppOptions options, EditorWorkspaceRegist
         try
         {
             path = PathRules.NormalizeAbsolute(path); string name = Path.GetFileName(path);
+            if (systemDirectories.IsExcluded(path)) return false;
             if (name.StartsWith('.') || name.StartsWith('~') || path.Split('\\').Contains("PrimEx Smart Save Staging", StringComparer.OrdinalIgnoreCase)) return false;
             if (name.Contains(".primex-backup-", StringComparison.OrdinalIgnoreCase) || name.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase) || name.Equals("thumbs.db", StringComparison.OrdinalIgnoreCase)) return false;
             if (TemporaryExtensions.Contains(Path.GetExtension(path))) return false;
@@ -71,9 +75,22 @@ public sealed class EligibleFilePolicy(AppOptions options, EditorWorkspaceRegist
         while (directories.TryPop(out string? current))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (var entry in new DirectoryInfo(current).EnumerateFileSystemInfos("*", enumeration))
+            IEnumerator<FileSystemInfo> entries;
+            try { entries = new DirectoryInfo(current).EnumerateFileSystemInfos("*", enumeration).GetEnumerator(); }
+            catch (Exception ex) when (current != folder && ex is IOException or UnauthorizedAccessException) { continue; }
+            using var iterator = entries;
+            while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                FileSystemInfo entry;
+                try
+                {
+                    if (!iterator.MoveNext()) break;
+                    entry = iterator.Current;
+                }
+                // A child may disappear or lose access after it was queued. Keep
+                // indexing its neighbors; failure of the selected root still propagates.
+                catch (Exception ex) when (current != folder && ex is IOException or UnauthorizedAccessException) { break; }
                 if ((entry.Attributes & FileAttributes.Directory) != 0)
                 {
                     // Prune entire cache/company/staging trees before enumeration.

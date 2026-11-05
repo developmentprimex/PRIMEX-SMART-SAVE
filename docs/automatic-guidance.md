@@ -26,7 +26,11 @@ shows whether guidance is on and how many selected folders are active.
 
 You can leave company roots empty while testing **Downloads**.
 Company roots are needed to offer a usable company destination. The same settings
-screen can disable monitoring without moving or deleting anything. Folder choices
+screen can disable monitoring without moving or deleting anything. Since 0.2.17,
+**Add a local folder or drive…** also accepts `C:\` or another local drive root.
+Keep **Include subfolders** checked to cover the drive's folders. System and
+application trees are skipped automatically; the first baseline scan may take
+longer on a large drive. No drive is selected automatically. Folder choices
 are remembered. Opening/cancelling setup never enables monitoring or changes files.
 Downloads/Desktop/Documents are suggested using the current Windows user's
 registered folder paths rather than a hardcoded user directory. Suggestions are
@@ -86,7 +90,8 @@ can also be detected. Application caches, temporary downloads, Office lock files
 hidden/system files and browser staging folders are excluded. Version 0.2.1
 defaults to **All completed file types**, including PNG/JPG and other images,
 PDFs, Office documents, archives, media, unfamiliar extensions and files without
-an extension. No entire-drive monitoring is allowed. The original two shipped
+an extension. Entire local drives may be selected explicitly since 0.2.17, with
+system/application exclusions. Network watch scopes remain unsupported. The original two shipped
 default extension lists automatically use this new default when loaded, without
 rewriting the existing configuration or changing selected folders/company roots.
 An explicitly customized list remains restricted. To restrict formats, uncheck
@@ -98,6 +103,14 @@ files, PrimEx recovery backups or cache/build subfolders such as Cache, AppData,
 node_modules, .git, .vs, bin and obj inside the selected roots. It never executes
 files. Choosing a broad recursive folder can produce more prompts; keep the scope
 limited to the document/download folders you actually want to guide.
+
+Whole-drive exclusions are anchored to the drive root: Windows, Windows.old,
+Program Files, Program Files (x86), ProgramData, Recovery, PerfLogs, Temp, tmp,
+MSOCache, Config.Msi and Windows update/recovery staging trees. Actual registered
+Windows/program/common-data locations are excluded even if relocated. A normal
+document folder such as `C:\Work\Windows` is still covered. The exclusions apply
+to startup enumeration and automatic prompts; explicit manual transfers remain
+available. Existing reparse/cloud-placeholder and permission limitations remain.
 
 Open Office files are retried while locked rather than discarded after two
 minutes. The pending table remains bounded. A browser-style final rename from

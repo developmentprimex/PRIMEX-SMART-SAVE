@@ -98,7 +98,13 @@ still applies. Diagnostics includes an active workspace count, never its paths.
 See editor-integrations.md for custom data-directory settings.
 Locked files are retried until released while the agent is running; open Office
 documents may therefore prompt only after closing. Setup validates selected
-folders and never watches whole drives or application cache locations automatically.
+folders and drives. Since 0.2.17, a local drive root such as `C:\` may be selected
+explicitly; IncludeSubdirectories must be true to include its folders. UNC shares
+and mapped network drives remain unsupported watch scopes. Windows/application
+locations, recovery and system temporary trees are excluded from baseline scans,
+live events and queued automatic requests. Cache/project/user exclusions remain.
+No drive is selected automatically; initial baseline time grows with the eligible
+documents on the selected drive.
 
 As of 0.2.1, `Monitoring.Extensions` defaults to `["*"]`, meaning all eligible
 completed file types, including images and extensionless files. The setup has an

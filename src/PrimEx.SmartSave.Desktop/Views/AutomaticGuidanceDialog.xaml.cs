@@ -17,7 +17,7 @@ public partial class AutomaticGuidanceDialog : Window
     }
     private void AddFolder(object sender, RoutedEventArgs e)
     {
-        var picker = new OpenFolderDialog { Title = "Select a local folder to watch", Multiselect = false };
+        var picker = new OpenFolderDialog { Title = "Select a local folder or drive to watch", Multiselect = false };
         if (picker.ShowDialog(this) == true) model.AddFolder(Path.GetFileName(picker.FolderName), picker.FolderName);
     }
     private void BrowseRoot(object sender, RoutedEventArgs e)
